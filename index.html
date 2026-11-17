@@ -3,88 +3,125 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NovaPlay — Unblocked Web Games</title>
+  <title>Starforge — Unblocked Cosmic Arcade</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header class="topbar">
-    <a href="index.html" class="brand">
-      <div class="brand-icon">🎮</div>
-      <span>NovaPlay</span>
-    </a>
-    <div class="search-wrap">
-      <span>🔍</span>
-      <input type="text" id="searchInput" placeholder="Search games by title or genre..." autocomplete="off" />
+    <a href="index.html" class="brand"><div class="brand-icon">✦</div><span>Starforge</span></a>
+    <div class="search-wrap"><span>🔍</span><input type="text" id="searchInput" placeholder="Search 18+ games..." autocomplete="off" /></div>
+    <div class="nav-actions">
+      <a href="profile.html" class="profile-chip"><span class="avatar-dot" id="navAvatar">🌌</span><span id="navName">Starforger</span></a>
+      <a href="settings.html" class="icon-btn" title="Settings & Tab Cloak">⚙️</a>
     </div>
   </header>
 
   <div class="layout">
     <aside class="sidebar" id="categoryBar">
-      <button class="cat-btn active" data-cat="All">🔥 All Games</button>
+      <button class="cat-btn active" data-cat="All">🔥 Home</button>
+      <button class="cat-btn" data-cat="Favorites">❤️ Favorites</button>
+      <div class="sidebar-divider"></div>
       <button class="cat-btn" data-cat="Action">⚔️ Action</button>
       <button class="cat-btn" data-cat="Arcade">🕹️ Arcade</button>
-      <button class="cat-btn" data-cat="Puzzle">🧩 Puzzle</button>
-      <button class="cat-btn" data-cat="Casual">🚀 Casual</button>
       <button class="cat-btn" data-cat="Driving">🏎️ Driving</button>
       <button class="cat-btn" data-cat="Sports">⚽ Sports</button>
+      <button class="cat-btn" data-cat="Puzzle">🧩 Puzzle</button>
+      <div class="sidebar-divider"></div>
+      <a href="profile.html" class="cat-btn">👤 Profile</a>
+      <a href="settings.html" class="cat-btn">⚙️ Settings</a>
     </aside>
 
     <main class="content">
-      <div class="section-header">
-        <h2 id="sectionTitle">All Games</h2>
-        <span class="count-pill" id="gameCount">0 games</span>
+      <section class="hero" id="heroBanner">
+        <div class="hero-inner">
+          <span class="hero-tag" id="heroBadge">FEATURED</span>
+          <h1 id="heroTitle">Starfall Tetris</h1>
+          <p id="heroDesc"></p>
+          <a href="#" id="heroPlayBtn" class="btn-play-hero">▶ Play Now</a>
+        </div>
+        <div class="hero-dots" id="heroDots"></div>
+      </section>
+
+      <div id="homeRows"></div>
+      <div id="filteredView" style="display:none;">
+        <div class="section-header"><h2 id="filteredTitle">Games</h2><span class="count-pill" id="filteredCount">0</span></div>
+        <div class="game-grid" id="filteredGrid"></div>
       </div>
-      <div class="game-grid" id="gameGrid"></div>
     </main>
   </div>
 
+  <script src="core.js"></script>
   <script src="games.js"></script>
   <script>
-    let activeCategory = "All";
-    const grid = document.getElementById("gameGrid");
-    const searchInput = document.getElementById("searchInput");
-    const sectionTitle = document.getElementById("sectionTitle");
-    const gameCount = document.getElementById("gameCount");
+    let activeCategory = "All", heroIdx = 0;
+    const featuredGames = GAMES.filter(g => g.featured);
 
-    function renderGames() {
-      const q = searchInput.value.trim().toLowerCase();
-      const filtered = GAMES.filter(g => {
-        const matchCat = activeCategory === "All" || g.category === activeCategory;
-        const matchQuery = g.title.toLowerCase().includes(q) || g.category.toLowerCase().includes(q);
-        return matchCat && matchQuery;
-      });
+    function renderHero(idx) {
+      heroIdx = idx % featuredGames.length;
+      const g = featuredGames[heroIdx];
+      document.getElementById("heroBanner").style.backgroundImage = `url("${g.cover}")`;
+      document.getElementById("heroBadge").textContent = `${g.badge || "FEATURED"} • ${g.category.toUpperCase()}`;
+      document.getElementById("heroTitle").textContent = g.title;
+      document.getElementById("heroDesc").textContent = g.desc;
+      document.getElementById("heroPlayBtn").href = `play.html?game=${encodeURIComponent(g.id)}`;
+      document.getElementById("heroDots").innerHTML = featuredGames.map((_, i) =>
+        `<button class="hero-dot ${i === heroIdx ? "active" : ""}" onclick="renderHero(${i})"></button>`
+      ).join("");
+    }
+    setInterval(() => renderHero(heroIdx + 1), 6500);
+    renderHero(0);
 
-      sectionTitle.textContent = q ? `Search: "${searchInput.value}"` : `${activeCategory} Games`;
-      gameCount.textContent = `${filtered.length} game${filtered.length === 1 ? "" : "s"}`;
-
-      grid.innerHTML = filtered.map(game => `
-        <a href="play.html?game=${encodeURIComponent(game.id)}" class="game-card">
-          <div class="card-thumb" style="background: ${game.gradient}">
-            ${game.badge ? `<span class="card-badge">${game.badge}</span>` : ""}
-            <span>${game.emoji}</span>
-          </div>
-          <div class="card-body">
-            <div>
-              <div class="card-title">${game.title}</div>
-              <div class="card-cat">${game.category}</div>
+    function cardHTML(game) {
+      const isFav = getStore().favorites.includes(game.id);
+      return `
+        <div class="game-card">
+          <button class="fav-star ${isFav ? "active" : ""}" onclick="event.preventDefault(); toggleFavorite('${game.id}'); renderPage();">${isFav ? "♥" : "♡"}</button>
+          <a href="play.html?game=${encodeURIComponent(game.id)}" style="text-decoration:none;color:inherit;">
+            <div class="card-thumb">
+              ${game.badge ? `<span class="card-badge">${game.badge}</span>` : ""}
+              <img src="${game.cover}" alt="${game.title}" loading="lazy" />
             </div>
-            <div class="play-pill">▶</div>
-          </div>
-        </a>
-      `).join("");
+            <div class="card-body">
+              <div><div class="card-title">${game.title}</div><div class="card-cat">${game.category}</div></div>
+              <div class="play-pill">▶</div>
+            </div>
+          </a>
+        </div>`;
     }
 
-    document.querySelectorAll(".cat-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        activeCategory = btn.dataset.cat;
-        renderGames();
-      });
-    });
+    function makeRow(title, list) {
+      return list.length ? `<section class="row-section"><div class="section-header"><h2>${title}</h2><span class="count-pill">${list.length}</span></div><div class="carousel">${list.map(cardHTML).join("")}</div></section>` : "";
+    }
 
-    searchInput.addEventListener("input", renderGames);
-    renderGames();
+    function renderPage() {
+      const q = document.getElementById("searchInput").value.trim().toLowerCase();
+      const homeRows = document.getElementById("homeRows"), filteredView = document.getElementById("filteredView"), hero = document.getElementById("heroBanner"), store = getStore();
+
+      if (activeCategory === "All" && !q) {
+        hero.style.display = "flex"; homeRows.style.display = "block"; filteredView.style.display = "none";
+        homeRows.innerHTML =
+          makeRow("🕒 Continue Playing", store.recent.map(id => GAMES.find(g => g.id === id)).filter(Boolean)) +
+          makeRow("❤️ Your Favorites", store.favorites.map(id => GAMES.find(g => g.id === id)).filter(Boolean)) +
+          makeRow("🔥 Trending on Starforge", GAMES.filter(g => g.trending)) +
+          makeRow("🕹️ Arcade & Action", GAMES.filter(g => g.category === "Arcade" || g.category === "Action")) +
+          makeRow("🏎️ Driving & Sports", GAMES.filter(g => g.category === "Driving" || g.category === "Sports")) +
+          makeRow("🧩 Puzzle & Brain", GAMES.filter(g => g.category === "Puzzle"));
+      } else {
+        hero.style.display = "none"; homeRows.style.display = "none"; filteredView.style.display = "block";
+        let list = activeCategory === "Favorites" ? store.favorites.map(id => GAMES.find(g => g.id === id)).filter(Boolean) : (activeCategory !== "All" ? GAMES.filter(g => g.category === activeCategory) : GAMES);
+        if (q) list = list.filter(g => g.title.toLowerCase().includes(q) || g.category.toLowerCase().includes(q));
+        document.getElementById("filteredTitle").textContent = q ? `Search: "${document.getElementById("searchInput").value}"` : `${activeCategory} Games`;
+        document.getElementById("filteredCount").textContent = `${list.length} games`;
+        document.getElementById("filteredGrid").innerHTML = list.length ? list.map(cardHTML).join("") : `<p style="color:var(--text-muted)">No games found here yet.</p>`;
+      }
+    }
+
+    document.querySelectorAll(".cat-btn[data-cat]").forEach(btn => btn.addEventListener("click", () => {
+      document.querySelectorAll(".cat-btn[data-cat]").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active"); activeCategory = btn.dataset.cat; renderPage();
+    }));
+    document.getElementById("searchInput").addEventListener("input", renderPage);
+    renderPage();
   </script>
 </body>
 </html>

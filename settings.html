@@ -15,77 +15,239 @@
     </div>
   </header>
 
-  <main class="content" style="margin-left:0; max-width:860px; margin:0 auto;">
-    <h1 style="font-size:1.6rem;font-weight:900;margin-bottom:1.25rem;">⚙️ Settings & Privacy</h1>
+  <main class="standalone-page">
+    <div class="settings-shell">
+      <aside class="settings-nav">
+        <h2 style="font-size:1.35rem;font-weight:900;padding:0.4rem 0.7rem 0.75rem;">Settings</h2>
+        <button class="cat-btn active" onclick="scrollSec('sec-appearance', this)">🎨 Appearance</button>
+        <button class="cat-btn" onclick="scrollSec('sec-privacy', this)">🛡️ Privacy & Cloak</button>
+        <button class="cat-btn" onclick="scrollSec('sec-browsing', this)">⚡ Browsing</button>
+        <button class="cat-btn" onclick="scrollSec('sec-shortcuts', this)">⌨️ Shortcuts</button>
+        <button class="cat-btn" onclick="scrollSec('sec-data', this)">🗄️ Data</button>
+      </aside>
 
-    <div class="panel-card">
-      <h2 style="font-size:1.1rem;margin-bottom:0.35rem;">🎭 Tab Cloak (Tab Disguise)</h2>
-      <p style="color:var(--text-muted);font-size:0.86rem;margin-bottom:1rem;">Disguise the browser tab title and icon across all Starforge pages.</p>
-      <div style="display:flex;flex-wrap:wrap;gap:0.6rem;">
-        <button class="tool-btn" onclick="setCloak('none')">✦ Default (Starforge)</button>
-        <button class="tool-btn" onclick="setCloak('drive')">📁 Google Drive</button>
-        <button class="tool-btn" onclick="setCloak('docs')">📄 Google Docs</button>
-        <button class="tool-btn" onclick="setCloak('classroom')">🎓 Google Classroom</button>
-        <button class="tool-btn" onclick="setCloak('calc')">🧮 Calculator</button>
+      <div>
+        <!-- APPEARANCE -->
+        <section id="sec-appearance" class="panel-card">
+          <h3 style="font-size:1.15rem;margin-bottom:1rem;">Appearance</h3>
+
+          <div class="set-row">
+            <div><strong>Mode</strong><p style="font-size:0.8rem;color:var(--text-muted);">Auto follows your device.</p></div>
+            <div class="seg-group" id="modeSeg">
+              <button class="seg-btn" data-val="dark" onclick="setOpt('mode','dark')">Dark</button>
+              <button class="seg-btn" data-val="light" onclick="setOpt('mode','light')">Light</button>
+              <button class="seg-btn" data-val="auto" onclick="setOpt('mode','auto')">Auto</button>
+            </div>
+          </div>
+
+          <div class="set-row">
+            <div><strong>Size</strong><p style="font-size:0.8rem;color:var(--text-muted);">Scales text and buttons everywhere.</p></div>
+            <div class="seg-group" id="sizeSeg">
+              <button class="seg-btn" data-val="small" onclick="setOpt('size','small')">Small</button>
+              <button class="seg-btn" data-val="normal" onclick="setOpt('size','normal')">Normal</button>
+              <button class="seg-btn" data-val="large" onclick="setOpt('size','large')">Large</button>
+            </div>
+          </div>
+
+          <div class="set-row">
+            <div><strong>Reduce motion</strong><p style="font-size:0.8rem;color:var(--text-muted);">Turns off hover lifts and animations.</p></div>
+            <label class="switch"><input type="checkbox" id="reduceMotionChk" onchange="setOpt('reduceMotion', this.checked)"><span class="slider"></span></label>
+          </div>
+
+          <div class="set-row" style="display:block;">
+            <div><strong>Font</strong><p style="font-size:0.8rem;color:var(--text-muted);">Applies across the entire portal.</p></div>
+            <input id="fontSearch" placeholder="🔍 Search fonts..." oninput="renderChoices()" style="width:100%;margin-top:0.65rem;padding:0.55rem 0.85rem;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-main);" />
+            <div class="choice-grid" id="fontGrid"></div>
+          </div>
+
+          <div class="set-row" style="display:block;">
+            <div><strong>Theme</strong><p style="font-size:0.8rem;color:var(--text-muted);">Tints the whole app.</p></div>
+            <div class="choice-grid" id="themeGrid"></div>
+          </div>
+
+          <div class="set-row">
+            <div><strong>Background</strong><p style="font-size:0.8rem;color:var(--text-muted);">Shown behind every page.</p></div>
+            <div class="seg-group" id="bgSeg">
+              <button class="seg-btn" data-val="off" onclick="setOpt('bg','off')">Off</button>
+              <button class="seg-btn" data-val="glow" onclick="setOpt('bg','glow')">Glow</button>
+              <button class="seg-btn" data-val="stars" onclick="setOpt('bg','stars')">Starfield</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- PRIVACY -->
+        <section id="sec-privacy" class="panel-card">
+          <h3 style="font-size:1.15rem;margin-bottom:1rem;">Privacy & Tab Disguise</h3>
+
+          <div class="set-row" style="display:block;">
+            <div><strong>Tab disguise</strong><p style="font-size:0.8rem;color:var(--text-muted);">Changes both the tab title and favicon icon.</p></div>
+            <div class="choice-grid" id="cloakGrid"></div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.65rem;margin-top:0.75rem;">
+              <input id="customTitleInput" placeholder="Custom tab title" oninput="setCustomCloak()" style="padding:0.58rem 0.85rem;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-main);" />
+              <input id="customIconInput" placeholder="Custom icon link (https://...)" oninput="setCustomCloak()" style="padding:0.58rem 0.85rem;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-main);" />
+            </div>
+          </div>
+
+          <div class="set-row">
+            <div><strong>Only when I switch away</strong><p style="font-size:0.8rem;color:var(--text-muted);">Keep the real tab while you're on it, disguise when switching tabs.</p></div>
+            <label class="switch"><input type="checkbox" id="switchCloakChk" onchange="setOpt('cloakOnSwitch', this.checked)"><span class="slider"></span></label>
+          </div>
+
+          <div class="set-row">
+            <div><strong>Browser history cloak (about:blank)</strong><p style="font-size:0.8rem;color:var(--text-muted);">Opens Starforge inside a hidden about:blank tab and leaves this tab on your Safe Site.</p></div>
+            <button class="tool-btn primary" onclick="openAboutBlankCloak()">🕶️ Launch Cloaked Tab</button>
+          </div>
+
+          <div class="set-row">
+            <div><strong>Panic key</strong><p style="font-size:0.8rem;color:var(--text-muted);">Press it anywhere to leave for a safe site.</p></div>
+            <button id="bindPanicBtn" class="tool-btn" onclick="bindPanicKey()">Set key (\)</button>
+          </div>
+
+          <div class="set-row">
+            <div><strong>Safe site</strong><p style="font-size:0.8rem;color:var(--text-muted);">Destination URL for Panic Key and History Cloak.</p></div>
+            <input id="safeSiteInput" onchange="setOpt('panicUrl', this.value.trim() || 'https://classroom.google.com')" style="min-width:250px;padding:0.55rem 0.85rem;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-main);" />
+          </div>
+        </section>
+
+        <!-- BROWSING -->
+        <section id="sec-browsing" class="panel-card">
+          <h3 style="font-size:1.15rem;margin-bottom:1rem;">Browsing & Game Priority</h3>
+          <div class="set-row">
+            <div><strong>Default Game Source</strong><p style="font-size:0.8rem;color:var(--text-muted);">Choose whether games try External Embed first or Local Backup first.</p></div>
+            <div class="seg-group" id="srcSeg">
+              <button class="seg-btn" data-val="true" onclick="setOpt('preferEmbed', true)">🌐 Embed First</button>
+              <button class="seg-btn" data-val="false" onclick="setOpt('preferEmbed', false)">💾 Local First</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- SHORTCUTS -->
+        <section id="sec-shortcuts" class="panel-card">
+          <h3 style="font-size:1.15rem;margin-bottom:1rem;">Shortcuts</h3>
+          <div class="set-row"><span><strong>Panic Redirect</strong></span><span class="count-pill" id="shortcutPanicLabel">\</span></div>
+          <div class="set-row"><span><strong>Search Catalog</strong></span><span class="count-pill">Search Bar on Home</span></div>
+        </section>
+
+        <!-- DATA -->
+        <section id="sec-data" class="panel-card">
+          <h3 style="font-size:1.15rem;margin-bottom:1rem;">Data & Backup</h3>
+          <div class="set-row">
+            <div><strong>Export / Import Save</strong><p style="font-size:0.8rem;color:var(--text-muted);">Transfer your XP, friends, favorites, and settings to another device.</p></div>
+            <div style="display:flex;gap:0.5rem;">
+              <button class="tool-btn" onclick="exportSave()">📤 Export</button>
+              <button class="tool-btn" onclick="importSave()">📥 Import</button>
+            </div>
+          </div>
+          <div class="set-row">
+            <div><strong>Reset App Data</strong><p style="font-size:0.8rem;color:var(--text-muted);">Clears all saved stats, friends, and preferences.</p></div>
+            <button class="tool-btn" style="border-color:#ef4444;color:#f87171;" onclick="resetAll()">Reset Everything</button>
+          </div>
+        </section>
       </div>
-    </div>
-
-    <div class="panel-card">
-      <h2 style="font-size:1.1rem;margin-bottom:0.35rem;">🚨 Panic Key</h2>
-      <p style="color:var(--text-muted);font-size:0.86rem;margin-bottom:1rem;">Press this key anytime to immediately redirect away from the site.</p>
-      <div style="display:grid;grid-template-columns:140px 1fr;gap:0.85rem;margin-bottom:1rem;">
-        <div><label style="font-size:0.78rem;color:var(--text-muted);display:block;margin-bottom:0.3rem;">Trigger Key</label><input id="panicKeyInput" maxlength="12" style="width:100%;padding:0.6rem;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:#fff;text-align:center;font-weight:700;" /></div>
-        <div><label style="font-size:0.78rem;color:var(--text-muted);display:block;margin-bottom:0.3rem;">Redirect URL</label><input id="panicUrlInput" style="width:100%;padding:0.6rem 0.85rem;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:#fff;" /></div>
-      </div>
-      <button class="tool-btn primary" onclick="savePanic()">Save Panic Settings</button>
-    </div>
-
-    <div class="panel-card">
-      <h2 style="font-size:1.1rem;margin-bottom:0.35rem;">⚡ Game Loading Priority</h2>
-      <p style="color:var(--text-muted);font-size:0.86rem;margin-bottom:1rem;">Choose how hybrid games launch by default.</p>
-      <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
-        <button id="srcEmbedBtn" class="tool-btn" onclick="setPreferEmbed(true)">🌐 External Embed First (with Local Backup)</button>
-        <button id="srcLocalBtn" class="tool-btn" onclick="setPreferEmbed(false)">💾 Local Self-Hosted First</button>
-      </div>
-    </div>
-
-    <div class="panel-card">
-      <h2 style="font-size:1.1rem;margin-bottom:0.35rem;">🗄️ Data Management</h2>
-      <p style="color:var(--text-muted);font-size:0.86rem;margin-bottom:1rem;">All profile stats, favorites, and settings are stored locally in your browser.</p>
-      <button class="tool-btn" style="border-color:#ef4444;color:#f87171;" onclick="resetAll()">Reset All Profile & Settings Data</button>
     </div>
   </main>
 
   <script src="core.js"></script>
   <script>
-    function syncUI() {
-      const { settings } = getStore();
-      document.getElementById("panicKeyInput").value = settings.panicKey;
-      document.getElementById("panicUrlInput").value = settings.panicUrl;
-      document.getElementById("srcEmbedBtn").className = settings.preferEmbed ? "tool-btn primary" : "tool-btn";
-      document.getElementById("srcLocalBtn").className = !settings.preferEmbed ? "tool-btn primary" : "tool-btn";
+    const FONTS = ["Inter", "Poppins", "Nunito", "Space Grotesk", "Lora", "JetBrains Mono", "Orbitron", "Rubik"];
+
+    function scrollSec(id, btn) {
+      document.querySelectorAll(".settings-nav .cat-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     }
-    function setCloak(mode) {
-      const data = getStore(); data.settings.cloak = mode; saveStore(data);
-      if (mode === "none") document.title = "Settings — Starforge";
+
+    function setOpt(key, val) {
+      const data = getStore();
+      data.settings[key] = val;
+      if (key === "cloak") { data.settings.customTitle = ""; data.settings.customIcon = ""; }
+      saveStore(data);
+      applyAppearance();
+      applyCloak();
+      syncAll();
+    }
+
+    function setCustomCloak() {
+      const data = getStore();
+      data.settings.customTitle = document.getElementById("customTitleInput").value.trim();
+      data.settings.customIcon = document.getElementById("customIconInput").value.trim();
+      saveStore(data);
       applyCloak();
     }
-    function savePanic() {
-      const data = getStore();
-      data.settings.panicKey = document.getElementById("panicKeyInput").value || "\\";
-      data.settings.panicUrl = document.getElementById("panicUrlInput").value.trim() || "https://drive.google.com";
-      saveStore(data);
-      alert("Panic key saved!");
+
+    function bindPanicKey() {
+      const btn = document.getElementById("bindPanicBtn");
+      btn.textContent = "Press any key...";
+      window.__bindingPanic = true;
+      const handler = e => {
+        e.preventDefault();
+        window.__bindingPanic = false;
+        window.removeEventListener("keydown", handler);
+        setOpt("panicKey", e.key);
+      };
+      window.addEventListener("keydown", handler);
     }
-    function setPreferEmbed(val) {
-      const data = getStore(); data.settings.preferEmbed = val; saveStore(data); syncUI();
+
+    function renderChoices() {
+      const { settings } = getStore();
+      const q = document.getElementById("fontSearch").value.trim().toLowerCase();
+      document.getElementById("fontGrid").innerHTML = FONTS.filter(f => f.toLowerCase().includes(q)).map(f => `
+        <button class="choice-card ${settings.font === f ? "active" : ""}" style="font-family:'${f}',sans-serif;" onclick="setOpt('font','${f}')">
+          <span style="font-size:1.1rem;font-weight:800;">Aa</span><span>${f}</span>
+        </button>`).join("");
+
+      document.getElementById("themeGrid").innerHTML = Object.entries(THEMES).map(([k, t]) => `
+        <button class="choice-card ${settings.theme === k ? "active" : ""}" onclick="setOpt('theme','${k}')">
+          <span class="swatch-dot" style="background:${t.accent};"></span><span>${t.label}</span>
+        </button>`).join("");
+
+      document.getElementById("cloakGrid").innerHTML = Object.entries(CLOAKS).map(([k, c]) => `
+        <button class="choice-card ${settings.cloak === k && !settings.customTitle && !settings.customIcon ? "active" : ""}" onclick="setOpt('cloak','${k}')">
+          <img src="${c.icon}" style="width:16px;height:16px;border-radius:4px;" /><span>${c.label}</span>
+        </button>`).join("");
     }
+
+    function syncAll() {
+      const { settings } = getStore();
+      document.querySelectorAll("#modeSeg .seg-btn").forEach(b => b.classList.toggle("active", b.dataset.val === settings.mode));
+      document.querySelectorAll("#sizeSeg .seg-btn").forEach(b => b.classList.toggle("active", b.dataset.val === settings.size));
+      document.querySelectorAll("#bgSeg .seg-btn").forEach(b => b.classList.toggle("active", b.dataset.val === settings.bg));
+      document.querySelectorAll("#srcSeg .seg-btn").forEach(b => b.classList.toggle("active", b.dataset.val === String(settings.preferEmbed)));
+
+      document.getElementById("reduceMotionChk").checked = Boolean(settings.reduceMotion);
+      document.getElementById("switchCloakChk").checked = Boolean(settings.cloakOnSwitch);
+      document.getElementById("customTitleInput").value = settings.customTitle || "";
+      document.getElementById("customIconInput").value = settings.customIcon || "";
+      document.getElementById("safeSiteInput").value = settings.panicUrl || "https://classroom.google.com";
+      document.getElementById("bindPanicBtn").textContent = `Set key (${settings.panicKey || "\\"})`;
+      document.getElementById("shortcutPanicLabel").textContent = settings.panicKey || "\\";
+      renderChoices();
+    }
+
+    function exportSave() {
+      const code = btoa(unescape(encodeURIComponent(localStorage.getItem("starforge_data") || "{}")));
+      prompt("Copy your Starforge Save Backup Code:", code);
+    }
+
+    function importSave() {
+      const code = prompt("Paste your Starforge Save Backup Code:");
+      if (!code) return;
+      try {
+        const json = decodeURIComponent(escape(atob(code.trim())));
+        JSON.parse(json);
+        localStorage.setItem("starforge_data", json);
+        location.reload();
+      } catch { alert("Invalid backup code."); }
+    }
+
     function resetAll() {
-      if (confirm("Clear your Starforge XP, favorites, and settings?")) {
-        localStorage.removeItem("starforge_data"); location.reload();
+      if (confirm("Clear all Starforge XP, friends, favorites, and settings?")) {
+        localStorage.removeItem("starforge_data");
+        location.reload();
       }
     }
-    syncUI();
+
+    syncAll();
   </script>
 </body>
 </html>

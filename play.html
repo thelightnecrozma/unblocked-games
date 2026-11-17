@@ -16,9 +16,10 @@
     </div>
   </header>
 
-  <main class="content" style="margin-left:0; padding-top:1.25rem;">
+  <main class="standalone-page" style="max-width:1280px;">
     <div class="player-wrapper" id="playerWrapper">
-      <div class="player-box">
+      <div class="player-box" id="playerBox">
+        <button id="exitFsBtn" class="exit-fs-btn">✕ Exit Fullscreen</button>
         <iframe id="gameFrame" class="game-viewport" src="" allowfullscreen></iframe>
         <div class="player-bar">
           <div>
@@ -51,9 +52,16 @@
     const game = GAMES.find(g => g.id === new URLSearchParams(window.location.search).get("game")) || GAMES[0];
     recordGameSession(game.id);
 
-    const frame = document.getElementById("gameFrame"), sourceBadge = document.getElementById("sourceBadge"), switchBtn = document.getElementById("switchSourceBtn"), favBtn = document.getElementById("favBtn");
-    document.title = `${game.title} — Starforge`;
+    const frame = document.getElementById("gameFrame");
+    const playerBox = document.getElementById("playerBox");
+    const sourceBadge = document.getElementById("sourceBadge");
+    const switchBtn = document.getElementById("switchSourceBtn");
+    const favBtn = document.getElementById("favBtn");
+
+    originalPageTitle = `${game.title} — Starforge`;
+    document.title = originalPageTitle;
     applyCloak();
+
     document.getElementById("gameTitle").textContent = game.title;
     document.getElementById("gameCategory").textContent = game.category;
     document.getElementById("controlsText").textContent = game.controls;
@@ -72,7 +80,8 @@
       if (preferEmbed && game.embedUrl) {
         usingEmbed = true; frame.src = game.embedUrl;
         sourceBadge.textContent = "🌐 External Embed"; sourceBadge.className = "status-badge embed";
-        switchBtn.style.display = "inline-flex"; switchBtn.textContent = "⚡ Switch to Local Backup";
+        if (game.localPath) { switchBtn.style.display = "inline-flex"; switchBtn.textContent = "⚡ Switch to Local Backup"; }
+        else switchBtn.style.display = "none";
       } else {
         usingEmbed = false; frame.src = game.localPath;
         sourceBadge.textContent = "💾 Local Self-Hosted"; sourceBadge.className = "status-badge";
@@ -85,7 +94,15 @@
     switchBtn.addEventListener("click", () => loadSource(!usingEmbed));
     document.getElementById("reloadBtn").addEventListener("click", () => { frame.src = frame.src; });
     document.getElementById("theaterBtn").addEventListener("click", () => document.getElementById("playerWrapper").classList.toggle("theater"));
-    document.getElementById("fullscreenBtn").addEventListener("click", () => { if (frame.requestFullscreen) frame.requestFullscreen(); });
+
+    /* Custom In-Page Fullscreen (iPad-friendly, no swipe-down exit) */
+    function toggleInPageFullscreen(force) {
+      const active = typeof force === "boolean" ? force : !playerBox.classList.contains("inpage-fs");
+      playerBox.classList.toggle("inpage-fs", active);
+      document.body.style.overflow = active ? "hidden" : "";
+    }
+    document.getElementById("fullscreenBtn").addEventListener("click", () => toggleInPageFullscreen(true));
+    document.getElementById("exitFsBtn").addEventListener("click", () => toggleInPageFullscreen(false));
 
     document.getElementById("moreGamesGrid").innerHTML = GAMES.filter(g => g.id !== game.id).slice(0, 8).map(g => `
       <a href="play.html?game=${encodeURIComponent(g.id)}" class="game-card">

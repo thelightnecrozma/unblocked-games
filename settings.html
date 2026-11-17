@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings — Starforge</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a href="index.html" class="brand"><div class="brand-icon">✦</div><span>Starforge</span></a>
+    <div class="nav-actions">
+      <a href="index.html" class="tool-btn">← Back to Games</a>
+      <a href="profile.html" class="profile-chip"><span class="avatar-dot" id="navAvatar">🌌</span><span id="navName">Starforger</span></a>
+    </div>
+  </header>
+
+  <main class="content" style="margin-left:0; max-width:860px; margin:0 auto;">
+    <h1 style="font-size:1.6rem;font-weight:900;margin-bottom:1.25rem;">⚙️ Settings & Privacy</h1>
+
+    <div class="panel-card">
+      <h2 style="font-size:1.1rem;margin-bottom:0.35rem;">🎭 Tab Cloak (Tab Disguise)</h2>
+      <p style="color:var(--text-muted);font-size:0.86rem;margin-bottom:1rem;">Disguise the browser tab title and icon across all Starforge pages.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:0.6rem;">
+        <button class="tool-btn" onclick="setCloak('none')">✦ Default (Starforge)</button>
+        <button class="tool-btn" onclick="setCloak('drive')">📁 Google Drive</button>
+        <button class="tool-btn" onclick="setCloak('docs')">📄 Google Docs</button>
+        <button class="tool-btn" onclick="setCloak('classroom')">🎓 Google Classroom</button>
+        <button class="tool-btn" onclick="setCloak('calc')">🧮 Calculator</button>
+      </div>
+    </div>
+
+    <div class="panel-card">
+      <h2 style="font-size:1.1rem;margin-bottom:0.35rem;">🚨 Panic Key</h2>
+      <p style="color:var(--text-muted);font-size:0.86rem;margin-bottom:1rem;">Press this key anytime to immediately redirect away from the site.</p>
+      <div style="display:grid;grid-template-columns:140px 1fr;gap:0.85rem;margin-bottom:1rem;">
+        <div><label style="font-size:0.78rem;color:var(--text-muted);display:block;margin-bottom:0.3rem;">Trigger Key</label><input id="panicKeyInput" maxlength="12" style="width:100%;padding:0.6rem;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:#fff;text-align:center;font-weight:700;" /></div>
+        <div><label style="font-size:0.78rem;color:var(--text-muted);display:block;margin-bottom:0.3rem;">Redirect URL</label><input id="panicUrlInput" style="width:100%;padding:0.6rem 0.85rem;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:#fff;" /></div>
+      </div>
+      <button class="tool-btn primary" onclick="savePanic()">Save Panic Settings</button>
+    </div>
+
+    <div class="panel-card">
+      <h2 style="font-size:1.1rem;margin-bottom:0.35rem;">⚡ Game Loading Priority</h2>
+      <p style="color:var(--text-muted);font-size:0.86rem;margin-bottom:1rem;">Choose how hybrid games launch by default.</p>
+      <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+        <button id="srcEmbedBtn" class="tool-btn" onclick="setPreferEmbed(true)">🌐 External Embed First (with Local Backup)</button>
+        <button id="srcLocalBtn" class="tool-btn" onclick="setPreferEmbed(false)">💾 Local Self-Hosted First</button>
+      </div>
+    </div>
+
+    <div class="panel-card">
+      <h2 style="font-size:1.1rem;margin-bottom:0.35rem;">🗄️ Data Management</h2>
+      <p style="color:var(--text-muted);font-size:0.86rem;margin-bottom:1rem;">All profile stats, favorites, and settings are stored locally in your browser.</p>
+      <button class="tool-btn" style="border-color:#ef4444;color:#f87171;" onclick="resetAll()">Reset All Profile & Settings Data</button>
+    </div>
+  </main>
+
+  <script src="core.js"></script>
+  <script>
+    function syncUI() {
+      const { settings } = getStore();
+      document.getElementById("panicKeyInput").value = settings.panicKey;
+      document.getElementById("panicUrlInput").value = settings.panicUrl;
+      document.getElementById("srcEmbedBtn").className = settings.preferEmbed ? "tool-btn primary" : "tool-btn";
+      document.getElementById("srcLocalBtn").className = !settings.preferEmbed ? "tool-btn primary" : "tool-btn";
+    }
+    function setCloak(mode) {
+      const data = getStore(); data.settings.cloak = mode; saveStore(data);
+      if (mode === "none") document.title = "Settings — Starforge";
+      applyCloak();
+    }
+    function savePanic() {
+      const data = getStore();
+      data.settings.panicKey = document.getElementById("panicKeyInput").value || "\\";
+      data.settings.panicUrl = document.getElementById("panicUrlInput").value.trim() || "https://drive.google.com";
+      saveStore(data);
+      alert("Panic key saved!");
+    }
+    function setPreferEmbed(val) {
+      const data = getStore(); data.settings.preferEmbed = val; saveStore(data); syncUI();
+    }
+    function resetAll() {
+      if (confirm("Clear your Starforge XP, favorites, and settings?")) {
+        localStorage.removeItem("starforge_data"); location.reload();
+      }
+    }
+    syncUI();
+  </script>
+</body>
+</html>

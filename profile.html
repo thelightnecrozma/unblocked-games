@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile — Starforge</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a href="index.html" class="brand"><div class="brand-icon">✦</div><span>Starforge</span></a>
+    <div class="nav-actions">
+      <a href="index.html" class="tool-btn">← Back to Games</a>
+      <a href="settings.html" class="icon-btn">⚙️</a>
+    </div>
+  </header>
+
+  <main class="content" style="margin-left:0; max-width:980px; margin:0 auto;">
+    <div class="panel-card" style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:center; justify-content:space-between;">
+      <div style="display:flex; gap:1.1rem; align-items:center;">
+        <div id="bigAvatar" style="width:74px;height:74px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#ec4899);display:grid;place-items:center;font-size:2.4rem;">🌌</div>
+        <div>
+          <h1 id="dispName" style="font-size:1.5rem;font-weight:900;">Starforger</h1>
+          <p id="dispBio" style="color:var(--text-muted);font-size:0.9rem;margin:0.2rem 0 0.55rem;"></p>
+          <div style="display:flex;align-items:center;gap:0.7rem;">
+            <span id="lvlBadge" class="status-badge">Level 1</span>
+            <div style="width:160px;height:8px;background:var(--bg-card);border-radius:999px;overflow:hidden;">
+              <div id="xpBar" style="height:100%;width:20%;background:var(--accent-light);"></div>
+            </div>
+            <span id="xpText" style="font-size:0.78rem;color:var(--text-muted);">0 XP</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; gap:1rem;">
+        <div style="background:var(--bg-card);padding:0.8rem 1.1rem;border-radius:12px;text-align:center;"><div id="statGames" style="font-size:1.3rem;font-weight:800;">0</div><div style="font-size:0.75rem;color:var(--text-muted);">Games Tried</div></div>
+        <div style="background:var(--bg-card);padding:0.8rem 1.1rem;border-radius:12px;text-align:center;"><div id="statSessions" style="font-size:1.3rem;font-weight:800;">0</div><div style="font-size:0.75rem;color:var(--text-muted);">Sessions</div></div>
+        <div style="background:var(--bg-card);padding:0.8rem 1.1rem;border-radius:12px;text-align:center;"><div id="statFavs" style="font-size:1.3rem;font-weight:800;">0</div><div style="font-size:0.75rem;color:var(--text-muted);">Favorites</div></div>
+      </div>
+    </div>
+
+    <div class="panel-card">
+      <h2 style="font-size:1.1rem;margin-bottom:1rem;">Customize Profile</h2>
+      <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem;" id="avatarPicker"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0.85rem;margin-bottom:1rem;">
+        <div><label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.3rem;">Gamer Tag</label><input id="inputName" style="width:100%;padding:0.6rem 0.85rem;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:#fff;" /></div>
+        <div><label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.3rem;">Status / Bio</label><input id="inputBio" style="width:100%;padding:0.6rem 0.85rem;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:#fff;" /></div>
+      </div>
+      <button id="saveProfileBtn" class="tool-btn primary">Save Profile</button>
+      <span id="saveMsg" style="margin-left:0.75rem;font-size:0.85rem;color:#34d399;display:none;">✓ Saved!</span>
+    </div>
+
+    <div class="panel-card">
+      <h2 style="font-size:1.1rem;margin-bottom:0.9rem;">🏆 Achievements</h2>
+      <div id="badgeGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:0.85rem;"></div>
+    </div>
+
+    <div class="section-header"><h2>❤️ Saved Favorites</h2></div>
+    <div class="game-grid" id="favGrid"></div>
+  </main>
+
+  <script src="core.js"></script>
+  <script src="games.js"></script>
+  <script>
+    const AVATARS = ["🌌", "⚡", "👾", "🚀", "🐉", "🕹️", "🦊", "💎", "🔥", "👑"];
+    let selectedAvatar = getStore().profile.avatar;
+
+    function renderProfile() {
+      const data = getStore(), p = data.profile, lvl = Math.floor(p.xp / 150) + 1, prog = ((p.xp % 150) / 150) * 100;
+      document.getElementById("bigAvatar").textContent = p.avatar;
+      document.getElementById("dispName").textContent = p.name;
+      document.getElementById("dispBio").textContent = p.bio;
+      document.getElementById("lvlBadge").textContent = `Level ${lvl}`;
+      document.getElementById("xpBar").style.width = `${prog}%`;
+      document.getElementById("xpText").textContent = `${p.xp} XP`;
+      document.getElementById("statGames").textContent = p.playedIds.length;
+      document.getElementById("statSessions").textContent = p.sessions;
+      document.getElementById("statFavs").textContent = data.favorites.length;
+      document.getElementById("inputName").value = p.name;
+      document.getElementById("inputBio").value = p.bio;
+
+      document.getElementById("avatarPicker").innerHTML = AVATARS.map(a =>
+        `<button type="button" class="icon-btn" style="font-size:1.3rem;${a===selectedAvatar?'border-color:var(--accent-light);background:var(--accent);':''}" onclick="selectedAvatar='${a}';renderProfile()">${a}</button>`
+      ).join("");
+
+      const achievements = [
+        { title: "First Spark", desc: "Play your first game", unlocked: p.sessions >= 1 },
+        { title: "Explorer", desc: "Try 5 different games", unlocked: p.playedIds.length >= 5 },
+        { title: "Starforger", desc: "Reach Level 3", unlocked: lvl >= 3 },
+        { title: "Curator", desc: "Favorite 3 games", unlocked: data.favorites.length >= 3 }
+      ];
+      document.getElementById("badgeGrid").innerHTML = achievements.map(a => `
+        <div style="background:var(--bg-card);padding:0.9rem;border-radius:12px;border:1px solid ${a.unlocked?'var(--accent-light)':'var(--border)'};opacity:${a.unlocked?1:0.45};">
+          <div style="font-weight:700;font-size:0.95rem;">${a.unlocked ? "🌟" : "🔒"} ${a.title}</div>
+          <div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.2rem;">${a.desc}</div>
+        </div>`).join("");
+
+      const favs = data.favorites.map(id => GAMES.find(g => g.id === id)).filter(Boolean);
+      document.getElementById("favGrid").innerHTML = favs.length ? favs.map(g => `
+        <a href="play.html?game=${encodeURIComponent(g.id)}" class="game-card">
+          <div class="card-thumb"><img src="${g.cover}" alt="${g.title}" /></div>
+          <div class="card-body"><div><div class="card-title">${g.title}</div><div class="card-cat">${g.category}</div></div><div class="play-pill">▶</div></div>
+        </a>`).join("") : `<p style="color:var(--text-muted);">No favorites yet — click the heart icon on any game!</p>`;
+    }
+
+    document.getElementById("saveProfileBtn").addEventListener("click", () => {
+      const data = getStore();
+      data.profile.name = document.getElementById("inputName").value.trim() || "Starforger";
+      data.profile.bio = document.getElementById("inputBio").value.trim() || "Exploring the Starforge arcade.";
+      data.profile.avatar = selectedAvatar;
+      saveStore(data); renderProfile();
+      const msg = document.getElementById("saveMsg"); msg.style.display = "inline"; setTimeout(() => msg.style.display = "none", 2000);
+    });
+    renderProfile();
+  </script>
+</body>
+</html>

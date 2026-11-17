@@ -15,10 +15,10 @@
     </div>
   </header>
 
-  <main class="content" style="margin-left:0; max-width:980px; margin:0 auto;">
+  <main class="standalone-page">
     <div class="panel-card" style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:center; justify-content:space-between;">
       <div style="display:flex; gap:1.1rem; align-items:center;">
-        <div id="bigAvatar" style="width:74px;height:74px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#ec4899);display:grid;place-items:center;font-size:2.4rem;">🌌</div>
+        <div id="bigAvatar" style="width:74px;height:74px;border-radius:20px;background:linear-gradient(135deg,var(--accent),var(--accent-light));display:grid;place-items:center;font-size:2.4rem;">🌌</div>
         <div>
           <h1 id="dispName" style="font-size:1.5rem;font-weight:900;">Starforger</h1>
           <p id="dispBio" style="color:var(--text-muted);font-size:0.9rem;margin:0.2rem 0 0.55rem;"></p>
@@ -31,10 +31,10 @@
           </div>
         </div>
       </div>
-      <div style="display:flex; gap:1rem;">
-        <div style="background:var(--bg-card);padding:0.8rem 1.1rem;border-radius:12px;text-align:center;"><div id="statGames" style="font-size:1.3rem;font-weight:800;">0</div><div style="font-size:0.75rem;color:var(--text-muted);">Games Tried</div></div>
+      <div style="display:flex; gap:0.85rem;">
+        <div style="background:var(--bg-card);padding:0.8rem 1.1rem;border-radius:12px;text-align:center;"><div id="statGames" style="font-size:1.3rem;font-weight:800;">0</div><div style="font-size:0.75rem;color:var(--text-muted);">Games</div></div>
         <div style="background:var(--bg-card);padding:0.8rem 1.1rem;border-radius:12px;text-align:center;"><div id="statSessions" style="font-size:1.3rem;font-weight:800;">0</div><div style="font-size:0.75rem;color:var(--text-muted);">Sessions</div></div>
-        <div style="background:var(--bg-card);padding:0.8rem 1.1rem;border-radius:12px;text-align:center;"><div id="statFavs" style="font-size:1.3rem;font-weight:800;">0</div><div style="font-size:0.75rem;color:var(--text-muted);">Favorites</div></div>
+        <div style="background:var(--bg-card);padding:0.8rem 1.1rem;border-radius:12px;text-align:center;"><div id="statFriends" style="font-size:1.3rem;font-weight:800;">0</div><div style="font-size:0.75rem;color:var(--text-muted);">Friends</div></div>
       </div>
     </div>
 
@@ -42,11 +42,28 @@
       <h2 style="font-size:1.1rem;margin-bottom:1rem;">Customize Profile</h2>
       <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem;" id="avatarPicker"></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0.85rem;margin-bottom:1rem;">
-        <div><label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.3rem;">Gamer Tag</label><input id="inputName" style="width:100%;padding:0.6rem 0.85rem;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:#fff;" /></div>
-        <div><label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.3rem;">Status / Bio</label><input id="inputBio" style="width:100%;padding:0.6rem 0.85rem;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:#fff;" /></div>
+        <div><label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.3rem;">Gamer Tag</label><input id="inputName" style="width:100%;padding:0.6rem 0.85rem;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-main);" /></div>
+        <div><label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.3rem;">Status / Bio</label><input id="inputBio" style="width:100%;padding:0.6rem 0.85rem;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-main);" /></div>
       </div>
       <button id="saveProfileBtn" class="tool-btn primary">Save Profile</button>
       <span id="saveMsg" style="margin-left:0.75rem;font-size:0.85rem;color:#34d399;display:none;">✓ Saved!</span>
+    </div>
+
+    <div class="panel-card">
+      <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:0.75rem;margin-bottom:1rem;">
+        <div>
+          <h2 style="font-size:1.1rem;">👥 Friends & Squad</h2>
+          <p style="font-size:0.82rem;color:var(--text-muted);">Share your Friend Code or add a friend by code or Gamer Tag.</p>
+        </div>
+        <button id="copyCodeBtn" class="tool-btn primary">📋 Copy My Friend Code</button>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:0.6rem;margin-bottom:1.1rem;">
+        <input id="friendInput" placeholder="Paste a Friend Code (SF-...) or type a Gamer Tag..." style="flex:1;min-width:220px;padding:0.6rem 0.85rem;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-main);" />
+        <button id="addFriendBtn" class="tool-btn primary">+ Add Friend</button>
+      </div>
+
+      <div id="friendsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:0.85rem;"></div>
     </div>
 
     <div class="panel-card">
@@ -64,6 +81,13 @@
     const AVATARS = ["🌌", "⚡", "👾", "🚀", "🐉", "🕹️", "🦊", "💎", "🔥", "👑"];
     let selectedAvatar = getStore().profile.avatar;
 
+    function getMyFriendCode() {
+      const p = getStore().profile;
+      const lvl = Math.floor(p.xp / 150) + 1;
+      const payload = btoa(unescape(encodeURIComponent(JSON.stringify({ n: p.name, a: p.avatar, l: lvl, s: p.bio }))));
+      return "SF-" + payload;
+    }
+
     function renderProfile() {
       const data = getStore(), p = data.profile, lvl = Math.floor(p.xp / 150) + 1, prog = ((p.xp % 150) / 150) * 100;
       document.getElementById("bigAvatar").textContent = p.avatar;
@@ -74,7 +98,7 @@
       document.getElementById("xpText").textContent = `${p.xp} XP`;
       document.getElementById("statGames").textContent = p.playedIds.length;
       document.getElementById("statSessions").textContent = p.sessions;
-      document.getElementById("statFavs").textContent = data.favorites.length;
+      document.getElementById("statFriends").textContent = data.friends.length;
       document.getElementById("inputName").value = p.name;
       document.getElementById("inputBio").value = p.bio;
 
@@ -82,11 +106,23 @@
         `<button type="button" class="icon-btn" style="font-size:1.3rem;${a===selectedAvatar?'border-color:var(--accent-light);background:var(--accent);':''}" onclick="selectedAvatar='${a}';renderProfile()">${a}</button>`
       ).join("");
 
+      document.getElementById("friendsGrid").innerHTML = data.friends.length ? data.friends.map((f, i) => `
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:0.85rem;display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
+          <div style="display:flex;align-items:center;gap:0.7rem;">
+            <div style="width:40px;height:40px;border-radius:12px;background:var(--accent);display:grid;place-items:center;font-size:1.35rem;">${f.avatar || "👾"}</div>
+            <div>
+              <div style="font-weight:700;font-size:0.94rem;">${f.name} <span style="font-size:0.72rem;color:var(--accent-light);">Lv.${f.level || 1}</span></div>
+              <div style="font-size:0.76rem;color:var(--text-muted);">${f.status || "Online"}</div>
+            </div>
+          </div>
+          <button class="icon-btn" style="width:30px;height:30px;font-size:0.8rem;" onclick="removeFriend(${i})" title="Remove">✕</button>
+        </div>`).join("") : `<p style="color:var(--text-muted);">No friends added yet.</p>`;
+
       const achievements = [
         { title: "First Spark", desc: "Play your first game", unlocked: p.sessions >= 1 },
         { title: "Explorer", desc: "Try 5 different games", unlocked: p.playedIds.length >= 5 },
         { title: "Starforger", desc: "Reach Level 3", unlocked: lvl >= 3 },
-        { title: "Curator", desc: "Favorite 3 games", unlocked: data.favorites.length >= 3 }
+        { title: "Squad Up", desc: "Have 3 or more friends", unlocked: data.friends.length >= 3 }
       ];
       document.getElementById("badgeGrid").innerHTML = achievements.map(a => `
         <div style="background:var(--bg-card);padding:0.9rem;border-radius:12px;border:1px solid ${a.unlocked?'var(--accent-light)':'var(--border)'};opacity:${a.unlocked?1:0.45};">
@@ -102,6 +138,34 @@
         </a>`).join("") : `<p style="color:var(--text-muted);">No favorites yet — click the heart icon on any game!</p>`;
     }
 
+    function removeFriend(idx) {
+      const data = getStore(); data.friends.splice(idx, 1); saveStore(data); renderProfile();
+    }
+
+    document.getElementById("copyCodeBtn").addEventListener("click", () => {
+      const code = getMyFriendCode();
+      navigator.clipboard?.writeText(code);
+      prompt("Copy your Starforge Friend Code to share:", code);
+    });
+
+    document.getElementById("addFriendBtn").addEventListener("click", () => {
+      const val = document.getElementById("friendInput").value.trim();
+      if (!val) return;
+      const data = getStore();
+      if (val.startsWith("SF-")) {
+        try {
+          const parsed = JSON.parse(decodeURIComponent(escape(atob(val.slice(3)))));
+          data.friends.unshift({ id: "f-" + Date.now(), name: parsed.n || "Player", avatar: parsed.a || "👾", level: parsed.l || 1, status: parsed.s || "Starforger" });
+        } catch { alert("Invalid Friend Code."); return; }
+      } else {
+        const randomAv = AVATARS[Math.floor(Math.random() * AVATARS.length)];
+        data.friends.unshift({ id: "f-" + Date.now(), name: val, avatar: randomAv, level: Math.floor(Math.random() * 8) + 1, status: "In the arcade" });
+      }
+      saveStore(data);
+      document.getElementById("friendInput").value = "";
+      renderProfile();
+    });
+
     document.getElementById("saveProfileBtn").addEventListener("click", () => {
       const data = getStore();
       data.profile.name = document.getElementById("inputName").value.trim() || "Starforger";
@@ -110,6 +174,7 @@
       saveStore(data); renderProfile();
       const msg = document.getElementById("saveMsg"); msg.style.display = "inline"; setTimeout(() => msg.style.display = "none", 2000);
     });
+
     renderProfile();
   </script>
 </body>

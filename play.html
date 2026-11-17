@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Play — NovaPlay</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a href="index.html" class="brand">
+      <div class="brand-icon">🎮</div>
+      <span>NovaPlay</span>
+    </a>
+    <a href="index.html" class="tool-btn">← Back to Catalog</a>
+  </header>
+
+  <main class="content" style="margin-left: 0; padding-top: 1.5rem;">
+    <div class="player-wrapper" id="playerWrapper">
+      <div class="player-box">
+        <iframe id="gameFrame" class="game-viewport" src="" allowfullscreen></iframe>
+        <div class="player-bar">
+          <div class="player-meta">
+            <h1 id="gameTitle">Loading...</h1>
+            <p id="gameCategory">Category</p>
+          </div>
+          <div class="toolbar">
+            <span id="sourceBadge" class="status-badge">💾 Local Self-Hosted</span>
+            <button id="switchSourceBtn" class="tool-btn" style="display:none;">⚡ Switch to Local Backup</button>
+            <button id="reloadBtn" class="tool-btn">↻ Reload</button>
+            <button id="theaterBtn" class="tool-btn">↔ Theater Mode</button>
+            <button id="fullscreenBtn" class="tool-btn primary">⛶ Fullscreen</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls-card" id="controlsBox">
+        <strong>How to Play:</strong> <span id="controlsText"></span>
+      </div>
+
+      <div class="section-header" style="margin-top: 2.25rem;">
+        <h2>More Games</h2>
+      </div>
+      <div class="game-grid" id="moreGamesGrid"></div>
+    </div>
+  </main>
+
+  <script src="games.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const gameId = params.get("game");
+    const game = GAMES.find(g => g.id === gameId) || GAMES[0];
+
+    const frame = document.getElementById("gameFrame");
+    const sourceBadge = document.getElementById("sourceBadge");
+    const switchBtn = document.getElementById("switchSourceBtn");
+    const wrapper = document.getElementById("playerWrapper");
+
+    document.title = `${game.title} — NovaPlay`;
+    document.getElementById("gameTitle").textContent = game.title;
+    document.getElementById("gameCategory").textContent = game.category;
+    document.getElementById("controlsText").textContent = game.controls || "Use keyboard or mouse to play.";
+
+    let usingEmbed = Boolean(game.embedUrl && game.embedUrl.trim() !== "");
+
+    function loadSource(preferEmbed) {
+      if (preferEmbed && game.embedUrl) {
+        usingEmbed = true;
+        frame.src = game.embedUrl;
+        sourceBadge.textContent = "🌐 External Embed";
+        sourceBadge.className = "status-badge embed";
+        if (game.localPath) {
+          switchBtn.style.display = "inline-block";
+          switchBtn.textContent = "⚡ Switch to Local Backup";
+        }
+      } else {
+        usingEmbed = false;
+        frame.src = game.localPath;
+        sourceBadge.textContent = "💾 Local Self-Hosted";
+        sourceBadge.className = "status-badge";
+        if (game.embedUrl) {
+          switchBtn.style.display = "inline-block";
+          switchBtn.textContent = "🌐 Try External Embed";
+        } else {
+          switchBtn.style.display = "none";
+        }
+      }
+    }
+
+    // Automatic fallback if iframe triggers an error event
+    frame.addEventListener("error", () => {
+      if (usingEmbed && game.localPath) {
+        loadSource(false);
+      }
+    });
+
+    switchBtn.addEventListener("click", () => loadSource(!usingEmbed));
+    document.getElementById("reloadBtn").addEventListener("click", () => {
+      frame.src = frame.src;
+    });
+
+    document.getElementById("theaterBtn").addEventListener("click", () => {
+      wrapper.classList.toggle("theater");
+    });
+
+    document.getElementById("fullscreenBtn").addEventListener("click", () => {
+      if (frame.requestFullscreen) frame.requestFullscreen();
+    });
+
+    // Render "More Games" below player
+    document.getElementById("moreGamesGrid").innerHTML = GAMES
+      .filter(g => g.id !== game.id)
+      .map(g => `
+        <a href="play.html?game=${encodeURIComponent(g.id)}" class="game-card">
+          <div class="card-thumb" style="background: ${g.gradient}">
+            <span>${g.emoji}</span>
+          </div>
+          <div class="card-body">
+            <div>
+              <div class="card-title">${g.title}</div>
+              <div class="card-cat">${g.category}</div>
+            </div>
+            <div class="play-pill">▶</div>
+          </div>
+        </a>
+      `).join("");
+
+    loadSource(usingEmbed);
+  </script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { margin: 0; background: #0c0d14; color: #fff; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+  canvas { border: 2px solid #10b981; border-radius: 10px; background: #141622; }
+  .hud { margin-bottom: 10px; font-weight: 700; font-size: 1.1rem; }
+</style>
+</head>
+<body>
+  <div class="hud">Score: <span id="score">0</span> &nbsp;|&nbsp; Best: <span id="best">0</span></div>
+  <canvas id="c" width="420" height="420"></canvas>
+<script>
+  const ctx = document.getElementById("c").getContext("2d");
+  const size = 20;
+  let snake = [{x:200,y:200}], dir = "RIGHT", score = 0, best = 0, food = spawn();
+  function spawn() { return { x: Math.floor(Math.random()*21)*size, y: Math.floor(Math.random()*21)*size }; }
+  window.addEventListener("keydown", e => {
+    if ((e.key==="ArrowUp"||e.key==="w") && dir!=="DOWN") dir="UP";
+    if ((e.key==="ArrowDown"||e.key==="s") && dir!=="UP") dir="DOWN";
+    if ((e.key==="ArrowLeft"||e.key==="a") && dir!=="RIGHT") dir="LEFT";
+    if ((e.key==="ArrowRight"||e.key==="d") && dir!=="LEFT") dir="RIGHT";
+  });
+  setInterval(() => {
+    ctx.clearRect(0,0,420,420);
+    ctx.fillStyle = "#f43f5e"; ctx.fillRect(food.x+2, food.y+2, size-4, size-4);
+    snake.forEach((s,i) => { ctx.fillStyle = i===0 ? "#34d399" : "#10b981"; ctx.fillRect(s.x+1, s.y+1, size-2, size-2); });
+    let h = {...snake[0]};
+    if (dir==="UP") h.y-=size; if (dir==="DOWN") h.y+=size; if (dir==="LEFT") h.x-=size; if (dir==="RIGHT") h.x+=size;
+    if (h.x<0||h.y<0||h.x>=420||h.y>=420||snake.some(s=>s.x===h.x&&s.y===h.y)) {
+      snake=[{x:200,y:200}]; dir="RIGHT"; score=0; document.getElementById("score").textContent=0; return;
+    }
+    snake.unshift(h);
+    if (h.x===food.x && h.y===food.y) {
+      score++; best = Math.max(best, score);
+      document.getElementById("score").textContent = score;
+      document.getElementById("best").textContent = best;
+      food = spawn();
+    } else snake.pop();
+  }, 95);
+</script>
+</body>
+</html>

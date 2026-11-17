@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NovaPlay — Unblocked Web Games</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a href="index.html" class="brand">
+      <div class="brand-icon">🎮</div>
+      <span>NovaPlay</span>
+    </a>
+    <div class="search-wrap">
+      <span>🔍</span>
+      <input type="text" id="searchInput" placeholder="Search games by title or genre..." autocomplete="off" />
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" id="categoryBar">
+      <button class="cat-btn active" data-cat="All">🔥 All Games</button>
+      <button class="cat-btn" data-cat="Action">⚔️ Action</button>
+      <button class="cat-btn" data-cat="Arcade">🕹️ Arcade</button>
+      <button class="cat-btn" data-cat="Puzzle">🧩 Puzzle</button>
+      <button class="cat-btn" data-cat="Casual">🚀 Casual</button>
+      <button class="cat-btn" data-cat="Driving">🏎️ Driving</button>
+      <button class="cat-btn" data-cat="Sports">⚽ Sports</button>
+    </aside>
+
+    <main class="content">
+      <div class="section-header">
+        <h2 id="sectionTitle">All Games</h2>
+        <span class="count-pill" id="gameCount">0 games</span>
+      </div>
+      <div class="game-grid" id="gameGrid"></div>
+    </main>
+  </div>
+
+  <script src="games.js"></script>
+  <script>
+    let activeCategory = "All";
+    const grid = document.getElementById("gameGrid");
+    const searchInput = document.getElementById("searchInput");
+    const sectionTitle = document.getElementById("sectionTitle");
+    const gameCount = document.getElementById("gameCount");
+
+    function renderGames() {
+      const q = searchInput.value.trim().toLowerCase();
+      const filtered = GAMES.filter(g => {
+        const matchCat = activeCategory === "All" || g.category === activeCategory;
+        const matchQuery = g.title.toLowerCase().includes(q) || g.category.toLowerCase().includes(q);
+        return matchCat && matchQuery;
+      });
+
+      sectionTitle.textContent = q ? `Search: "${searchInput.value}"` : `${activeCategory} Games`;
+      gameCount.textContent = `${filtered.length} game${filtered.length === 1 ? "" : "s"}`;
+
+      grid.innerHTML = filtered.map(game => `
+        <a href="play.html?game=${encodeURIComponent(game.id)}" class="game-card">
+          <div class="card-thumb" style="background: ${game.gradient}">
+            ${game.badge ? `<span class="card-badge">${game.badge}</span>` : ""}
+            <span>${game.emoji}</span>
+          </div>
+          <div class="card-body">
+            <div>
+              <div class="card-title">${game.title}</div>
+              <div class="card-cat">${game.category}</div>
+            </div>
+            <div class="play-pill">▶</div>
+          </div>
+        </a>
+      `).join("");
+    }
+
+    document.querySelectorAll(".cat-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        activeCategory = btn.dataset.cat;
+        renderGames();
+      });
+    });
+
+    searchInput.addEventListener("input", renderGames);
+    renderGames();
+  </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { margin: 0; background: #0c0d14; color: #fff; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+  canvas { border: 2px solid #8b5cf6; border-radius: 10px; background: #141622; }
+  .hud { margin-bottom: 10px; font-weight: 700; }
+</style>
+</head>
+<body>
+  <div class="hud">Score: <span id="score">0</span></div>
+  <canvas id="c" width="520" height="360"></canvas>
+<script>
+  const c = document.getElementById("c"), ctx = c.getContext("2d");
+  let x = 260, y = 310, dx = 3.2, dy = -3.2, px = 215, score = 0;
+  let bricks = Array.from({length:6}, (_,col) => Array.from({length:4}, (_,row) => ({x: col*80+25, y: row*24+30, alive:true})));
+  c.addEventListener("mousemove", e => { const r = c.getBoundingClientRect(); px = Math.max(0, Math.min(c.width-90, e.clientX-r.left-45)); });
+  function loop() {
+    ctx.clearRect(0,0,c.width,c.height);
+    bricks.flat().forEach(b => {
+      if (!b.alive) return;
+      ctx.fillStyle = "#a855f7"; ctx.fillRect(b.x, b.y, 70, 16);
+      if (x>b.x && x<b.x+70 && y>b.y && y<b.y+16) { dy=-dy; b.alive=false; score+=10; document.getElementById("score").textContent=score; }
+    });
+    ctx.fillStyle = "#38bdf8"; ctx.fillRect(px, c.height-16, 90, 10);
+    ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI*2); ctx.fillStyle = "#fbbf24"; ctx.fill();
+    if (x+dx>c.width-7 || x+dx<7) dx=-dx;
+    if (y+dy<7) dy=-dy;
+    else if (y+dy>c.height-16) {
+      if (x>px && x<px+90) dy=-dy;
+      else { x=260; y=310; dy=-3.2; }
+    }
+    x+=dx; y+=dy; requestAnimationFrame(loop);
+  }
+  loop();
+</script>
+</body>
+</html>

@@ -1,18 +1,23 @@
+/* STARFORGE CORE & FIREBASE SCRIPT */
+
+// The visual starburst mascot (renders crystal/spark icon without image uploads)
+const MOTO_MASCOT = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='a' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%23a855f7'/><stop offset='100%25' stop-color='%23c084fc'/></linearGradient></defs><rect width='100' height='100' rx='24' fill='%230a0c16'/><path d='M50 12 L56 38 L82 44 L58 52 L50 82 L42 52 L18 44 L44 38 Z' fill='url(%23a)'/><circle cx='50' cy='45' r='12' fill='%23fff' opacity='0.75'/><path d='M50 32 L51 44 L63 45 L51 46 L50 58 L49 46 L37 45 L49 44 Z' fill='%23fff'/></svg>";
+
 const DEFAULT_DATA = {
   profile: { name: "Starforger", avatar: "🌌", bio: "Exploring the Starforge arcade.", xp: 0, sessions: 0, playedIds: [] },
   favorites: [],
   recent: [],
   friends: [
     { id: "sf-bot-1", name: "UltraNecrozma", avatar: "⚡", level: 12, status: "Forging high scores" },
-    { id: "sf-bot-2", name: "NovaRunner", avatar: "🚀", level: 7, status: "Playing Slope Run" }
+    { id: "sf-bot-2", name: "NovaRunner", avatar: "🚀", level: 7, status: "Playing Cyber Snake" }
   ],
   settings: {
     mode: "dark",
     size: "normal",
     reduceMotion: false,
     font: "Inter",
-    theme: "default",
-    bg: "off",
+    theme: "gold",
+    bg: "stars",
     cloak: "none",
     customTitle: "",
     customIcon: "",
@@ -22,6 +27,79 @@ const DEFAULT_DATA = {
     preferEmbed: true
   }
 };
+
+// PLACE YOUR FIREBASE CREDENTIALS FROM THE CONSOLE HERE:
+const firebaseConfig = {
+  apiKey: "PLACE_YOUR_API_KEY_HERE",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+let db, auth, currentUser = null;
+
+// Only spin up Firebase when API credentials are live, preventing crash states on build scripts
+if (firebaseConfig.apiKey && !firebaseConfig.apiKey.includes("PLACE_YOUR")) {
+  import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js").then(({ initializeApp }) => {
+    const app = initializeApp(firebaseConfig);
+    Promise.all([
+      import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"),
+      import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js")
+    ]).then(([{ getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }, { getFirestore, doc, setDoc, getDoc }]) => {
+      auth = getAuth(app);
+      db = getFirestore(app);
+
+      window.signInWithGoogle = () => {
+        signInWithPopup(auth, new GoogleAuthProvider()).then(res => {
+          currentUser = res.user;
+          loadUserData(res.user.uid);
+        }).catch(err => console.error("Login fail:", err));
+      };
+
+      window.logoutFirebase = () => {
+        signOut(auth).then(() => {
+          currentUser = null;
+          location.reload();
+        });
+      };
+
+      onAuthStateChanged(auth, user => {
+        if (user) {
+          currentUser = user;
+          loadUserData(user.uid);
+        } else {
+          applyAppearance();
+          applyCloak();
+        }
+      });
+    });
+  });
+}
+
+function loadUserData(uid) {
+  if (!db) return;
+  const docRef = doc(db, "users", uid);
+  getDoc(docRef).then(snap => {
+    if (snap.exists()) {
+      localStorage.setItem("starforge_data", JSON.stringify(snap.data()));
+    } else {
+      syncLocalToFirebase(uid);
+    }
+    applyAppearance();
+    applyCloak();
+    if (window.renderProfile) window.renderProfile();
+  });
+}
+
+function syncLocalToFirebase(uid) {
+  if (!db) return;
+  const data = getStore();
+  setDoc(doc(db, "users", uid), data).then(() => {
+    console.log("Profile synced to cloud backup.");
+  });
+}
 
 function getStore() {
   try {
@@ -38,6 +116,9 @@ function getStore() {
 
 function saveStore(data) {
   localStorage.setItem("starforge_data", JSON.stringify(data));
+  if (currentUser && db) {
+    setDoc(doc(db, "users", currentUser.uid), data);
+  }
 }
 
 function toggleFavorite(id) {
@@ -63,7 +144,7 @@ function recordGameSession(id) {
 
 /* Themes & Appearance */
 const THEMES = {
-  default:    { label: "Default",    accent: "#7c3aed", light: "#a78bfa", bg: "#0c0d14", surf: "#141622", card: "#1b1e2e" },
+  default:    { label: "Default",    accent: "#a855f7", light: "#c084fc", bg: "#06070c", surf: "#0a0c16", card: "#0f1221" },
   strawberri: { label: "Strawberri", accent: "#e11d48", light: "#fb7185", bg: "#14090c", surf: "#1f0e13", card: "#2b141b" },
   pink:       { label: "Pink",       accent: "#db2777", light: "#f472b6", bg: "#120a10", surf: "#1c1019", card: "#271623" },
   aqua:       { label: "Aqua",       accent: "#0284c7", light: "#38bdf8", bg: "#081018", surf: "#0f1924", card: "#162333" },
@@ -98,10 +179,10 @@ function applyAppearance() {
     root.style.setProperty("--bg-main", t.bg);
     root.style.setProperty("--bg-surface", t.surf);
     root.style.setProperty("--bg-card", t.card);
-    root.style.setProperty("--bg-hover", "#262b40");
+    root.style.setProperty("--bg-hover", "#1d1f33");
     root.style.setProperty("--text-main", "#f8fafc");
-    root.style.setProperty("--text-muted", "#94a3b8");
-    root.style.setProperty("--border", "#262a3d");
+    root.style.setProperty("--text-muted", "#64748b");
+    root.style.setProperty("--border", "#1e293b");
   }
 
   root.classList.remove("scale-small", "scale-large");
@@ -114,99 +195,4 @@ function applyAppearance() {
   if (settings.bg === "stars") body.classList.add("bg-stars");
 
   const fontName = settings.font || "Inter";
-  root.style.setProperty("--font-family", `'${fontName}', system-ui, sans-serif`);
-  if (fontName !== "Inter") {
-    let gf = document.getElementById("sf-google-font");
-    if (!gf) { gf = document.createElement("link"); gf.id = "sf-google-font"; gf.rel = "stylesheet"; document.head.appendChild(gf); }
-    gf.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName)}:wght@400;600;700;800;900&display=swap`;
-  }
-}
-
-/* Tab & Favicon Cloaking */
-const CLOAKS = {
-  none:      { label: "Off",       title: null, icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>" },
-  google:    { label: "Google",    title: "Google", icon: "https://www.google.com/favicon.ico" },
-  classroom: { label: "Classroom", title: "Home - Classroom", icon: "https://ssl.gstatic.com/classroom/favicon.png" },
-  clever:    { label: "Clever",    title: "Clever | Portal", icon: "https://assets.clever.com/launchpad/c73382746/favicon.ico" },
-  gmail:     { label: "Gmail",     title: "Inbox - Gmail", icon: "https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico" },
-  drive:     { label: "Drive",     title: "My Drive - Google Drive", icon: "https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png" },
-  desmos:    { label: "Desmos",    title: "Desmos | Graphing Calculator", icon: "https://www.desmos.com/assets/img/apps/graphing/favicon.ico" },
-  wikipedia: { label: "Wikipedia", title: "Wikipedia, the free encyclopedia", icon: "https://en.wikipedia.org/static/favicon/wikipedia.ico" },
-  newtab:    { label: "New Tab",   title: "New Tab", icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%2394a3b8'/></svg>" },
-  bing:      { label: "Bing",      title: "Bing", icon: "https://www.bing.com/sa/simg/favicon-trans-bg-blue-mg.ico" }
-};
-
-let originalPageTitle = document.title;
-
-function setFavicon(href) {
-  document.querySelectorAll("link[rel*='icon']").forEach(el => el.remove());
-  const link = document.createElement("link");
-  link.rel = "icon";
-  link.type = "image/png";
-  link.href = href;
-  document.head.appendChild(link);
-}
-
-function applyCloak(forceHide = false) {
-  const { settings } = getStore();
-  if (settings.cloakOnSwitch && !forceHide && !document.hidden) {
-    document.title = originalPageTitle;
-    setFavicon(CLOAKS.none.icon);
-    return;
-  }
-
-  if (settings.customTitle || settings.customIcon) {
-    if (settings.customTitle) document.title = settings.customTitle;
-    if (settings.customIcon) setFavicon(settings.customIcon);
-    return;
-  }
-
-  const preset = CLOAKS[settings.cloak] || CLOAKS.none;
-  if (preset.title) document.title = preset.title;
-  else document.title = originalPageTitle;
-  setFavicon(preset.icon);
-}
-
-document.addEventListener("visibilitychange", () => {
-  const { settings } = getStore();
-  if (settings.cloakOnSwitch) applyCloak(document.hidden);
-});
-
-/* Browser History Cloak (about:blank Launcher) */
-function openAboutBlankCloak() {
-  const { settings } = getStore();
-  const preset = CLOAKS[settings.cloak] || CLOAKS.drive;
-  const cloakTitle = settings.customTitle || preset.title || "My Drive - Google Drive";
-  const cloakIcon = settings.customIcon || preset.icon;
-  const targetUrl = window.location.href;
-
-  const win = window.open("about:blank", "_blank");
-  if (!win) {
-    alert("Pop-up blocked! Tap 'Allow' for pop-ups in Safari Settings to launch the about:blank history cloak.");
-    return;
-  }
-  win.document.open();
-  win.document.write(`<!DOCTYPE html><html><head><title>${cloakTitle}</title><link rel="icon" href="${cloakIcon}"><style>html,body,iframe{margin:0;padding:0;width:100%;height:100%;border:none;overflow:hidden;background:#0c0d14;}</style></head><body><iframe src="${targetUrl}" allowfullscreen></iframe></body></html>`);
-  win.document.close();
-  window.location.replace(settings.panicUrl || "https://classroom.google.com");
-}
-
-/* Global Panic Key */
-window.addEventListener("keydown", e => {
-  if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName) || window.__bindingPanic) return;
-  const { settings } = getStore();
-  if (settings.panicKey && e.key.toLowerCase() === settings.panicKey.toLowerCase()) {
-    window.location.replace(settings.panicUrl || "https://classroom.google.com");
-  }
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-  originalPageTitle = document.title;
-  applyAppearance();
-  applyCloak();
-  const data = getStore();
-  const navAvatar = document.getElementById("navAvatar");
-  const navName = document.getElementById("navName");
-  if (navAvatar) navAvatar.textContent = data.profile.avatar;
-  if (navName) navName.textContent = data.profile.name;
-});
+  root.style.setProperty("--font

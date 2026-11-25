@@ -1,6 +1,6 @@
-/* STARFORGE CORE & FIREBASE SCRIPT */
+/* STARFORGE CORE & FIREBASE CLOUD SYNC */
 
-const MOTO_MASCOT = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='a' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%23a855f7'/><stop offset='100%25' stop-color='%23c084fc'/></linearGradient></defs><rect width='100' height='100' rx='24' fill='%230a0c16'/><path d='M50 12 L56 38 L82 44 L58 52 L50 82 L42 52 L18 44 L44 38 Z' fill='url(%23a)'/><circle cx='50' cy='45' r='12' fill='%23fff' opacity='0.75'/><path d='M50 32 L51 44 L63 45 L51 46 L50 58 L49 46 L37 45 L49 44 Z' fill='%23fff'/></svg>";
+const STARFORGE_ICON = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='a' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%23a855f7'/><stop offset='50%25' stop-color='%2338bdf8'/><stop offset='100%25' stop-color='%23facc15'/></linearGradient></defs><rect width='100' height='100' rx='24' fill='%230a0c16'/><path d='M50 10 L58 38 L88 46 L58 54 L50 86 L42 54 L12 46 L42 38 Z' fill='url(%23a)'/><circle cx='50' cy='46' r='11' fill='%23ffffff' opacity='0.85'/></svg>";
 
 const DEFAULT_DATA = {
   profile: { name: "Starforger", avatar: "🌌", bio: "Exploring the Starforge arcade.", xp: 0, sessions: 0, playedIds: [] },
@@ -8,14 +8,14 @@ const DEFAULT_DATA = {
   recent: [],
   friends: [
     { id: "sf-bot-1", name: "UltraNecrozma", avatar: "⚡", level: 12, status: "Forging high scores" },
-    { id: "sf-bot-2", name: "NovaRunner", avatar: "🚀", level: 7, status: "Playing Cyber Snake" }
+    { id: "sf-bot-2", name: "NovaRunner", avatar: "🚀", level: 7, status: "Playing Drift Boss" }
   ],
   settings: {
     mode: "dark",
     size: "normal",
     reduceMotion: false,
     font: "Inter",
-    theme: "gold",
+    theme: "default",
     bg: "stars",
     cloak: "none",
     customTitle: "",
@@ -37,102 +37,12 @@ const firebaseConfig = {
   measurementId: "G-12P3GT37B8"
 };
 
-let db, auth, fsDoc, fsSetDoc, fsGetDoc, currentUser = null;
-
-function refreshNavProfile() {
-  const data = getStore();
-  const navAvatar = document.getElementById("navAvatar");
-  const navName = document.getElementById("navName");
-  if (navAvatar) navAvatar.textContent = data.profile.avatar;
-  if (navName) navName.textContent = data.profile.name;
-
-  const navActions = document.querySelector(".nav-actions");
-  if (navActions) {
-    let navLogin = document.getElementById("navLoginBtn");
-    if (!navLogin) {
-      navLogin = document.createElement("button");
-      navLogin.id = "navLoginBtn";
-      navLogin.style.cssText = "padding:0.38rem 0.78rem;font-size:0.82rem;border-radius:999px;";
-      navActions.prepend(navLogin);
-    }
-    if (currentUser) {
-      navLogin.textContent = "Sign out";
-      navLogin.className = "tool-btn";
-      navLogin.onclick = () => window.logoutFirebase && window.logoutFirebase();
-    } else {
-      navLogin.textContent = "Login with Google";
-      navLogin.className = "tool-btn primary";
-      navLogin.onclick = () => window.signInWithGoogle ? window.signInWithGoogle() : alert("Loading Google Sign-In, tap again in a second.");
-    }
-  }
-}
-
-if (firebaseConfig.apiKey && !firebaseConfig.apiKey.includes("PLACE_YOUR")) {
-  import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js").then(({ initializeApp }) => {
-    const app = initializeApp(firebaseConfig);
-    Promise.all([
-      import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"),
-      import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js")
-    ]).then(([{ getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }, { getFirestore, doc, setDoc, getDoc }]) => {
-      auth = getAuth(app);
-      db = getFirestore(app);
-      fsDoc = doc;
-      fsSetDoc = setDoc;
-      fsGetDoc = getDoc;
-
-      window.signInWithGoogle = () => {
-        signInWithPopup(auth, new GoogleAuthProvider()).then(res => {
-          currentUser = res.user;
-          loadUserData(res.user);
-        }).catch(err => alert("Google Sign-In error: " + err.message));
-      };
-
-      window.logoutFirebase = () => {
-        signOut(auth).then(() => {
-          currentUser = null;
-          location.reload();
-        });
-      };
-
-      onAuthStateChanged(auth, user => {
-        if (user) {
-          currentUser = user;
-          loadUserData(user);
-        } else {
-          applyAppearance();
-          applyCloak();
-          refreshNavProfile();
-        }
-      });
-    });
-  });
-}
-
-function loadUserData(user) {
-  if (!db || !fsDoc || !fsGetDoc) return;
-  const docRef = fsDoc(db, "users", user.uid);
-  fsGetDoc(docRef).then(snap => {
-    if (snap.exists()) {
-      localStorage.setItem("starforge_data", JSON.stringify(snap.data()));
-    } else {
-      const local = getStore();
-      if (local.profile.name === "Starforger" && user.displayName) {
-        local.profile.name = user.displayName;
-        localStorage.setItem("starforge_data", JSON.stringify(local));
-      }
-      syncLocalToFirebase(user.uid);
-    }
-    applyAppearance();
-    applyCloak();
-    refreshNavProfile();
-    if (window.renderProfile) window.renderProfile();
-  }).catch(err => console.error("Cloud load error:", err));
-}
-
-function syncLocalToFirebase(uid) {
-  if (!db || !fsDoc || !fsSetDoc) return;
-  fsSetDoc(fsDoc(db, "users", uid), getStore(), { merge: true }).catch(err => console.error("Cloud save error:", err));
-}
+let db = null;
+let auth = null;
+let fsDoc = null;
+let fsSetDoc = null;
+let fsGetDoc = null;
+let currentUser = null;
 
 function getStore() {
   try {
@@ -144,13 +54,15 @@ function getStore() {
       friends: Array.isArray(raw.friends) ? raw.friends : DEFAULT_DATA.friends,
       settings: { ...DEFAULT_DATA.settings, ...(raw.settings || {}) }
     };
-  } catch { return JSON.parse(JSON.stringify(DEFAULT_DATA)); }
+  } catch (e) {
+    return JSON.parse(JSON.stringify(DEFAULT_DATA));
+  }
 }
 
 function saveStore(data) {
   localStorage.setItem("starforge_data", JSON.stringify(data));
   if (currentUser && db && fsDoc && fsSetDoc) {
-    fsSetDoc(fsDoc(db, "users", currentUser.uid), data, { merge: true });
+    fsSetDoc(fsDoc(db, "users", currentUser.uid), data, { merge: true }).catch(function() {});
   }
 }
 
@@ -171,13 +83,40 @@ function recordGameSession(id) {
     data.profile.playedIds.push(id);
     data.profile.xp += 50;
   }
-  data.recent = [id, ...data.recent.filter(x => x !== id)].slice(0, 8);
+  data.recent = [id, ...data.recent.filter(function(x) { return x !== id; })].slice(0, 8);
   saveStore(data);
+}
+
+function refreshAuthUI() {
+  const data = getStore();
+  const navAvatar = document.getElementById("navAvatar");
+  const navName = document.getElementById("navName");
+  if (navAvatar) navAvatar.textContent = data.profile.avatar;
+  if (navName) navName.textContent = data.profile.name;
+
+  const navLoginBtn = document.getElementById("navLoginBtn");
+  if (navLoginBtn) {
+    if (currentUser) {
+      navLoginBtn.textContent = "Sign out";
+      navLoginBtn.className = "tool-btn";
+      navLoginBtn.onclick = function() { if (window.logoutFirebase) window.logoutFirebase(); };
+    } else {
+      navLoginBtn.textContent = "Login with Google";
+      navLoginBtn.className = "tool-btn primary";
+      navLoginBtn.onclick = function() {
+        if (window.signInWithGoogle) window.signInWithGoogle();
+        else alert("Google Sign-In is still connecting — wait 2 seconds and tap again.");
+      };
+    }
+  }
+  if (typeof window.renderProfile === "function") {
+    window.renderProfile();
+  }
 }
 
 /* Themes & Appearance */
 const THEMES = {
-  default:    { label: "Default",       accent: "#a855f7", light: "#c084fc", bg: "#06070c", surf: "#0a0c16", card: "#0f1221" },
+  default:    { label: "Cosmic Purple", accent: "#a855f7", light: "#c084fc", bg: "#06070c", surf: "#0b0d18", card: "#121526" },
   strawberri: { label: "Strawberri",    accent: "#e11d48", light: "#fb7185", bg: "#14090c", surf: "#1f0e13", card: "#2b141b" },
   pink:       { label: "Pink",          accent: "#db2777", light: "#f472b6", bg: "#120a10", surf: "#1c1019", card: "#271623" },
   aqua:       { label: "Aqua",          accent: "#0284c7", light: "#38bdf8", bg: "#081018", surf: "#0f1924", card: "#162333" },
@@ -190,9 +129,10 @@ const THEMES = {
 };
 
 function applyAppearance() {
-  const { settings } = getStore();
+  const settings = getStore().settings;
   const root = document.documentElement;
   const body = document.body;
+  if (!body) return;
   const t = THEMES[settings.theme] || THEMES.default;
 
   const isLight = settings.mode === "light" || (settings.mode === "auto" && window.matchMedia("(prefers-color-scheme: light)").matches);
@@ -212,9 +152,9 @@ function applyAppearance() {
     root.style.setProperty("--bg-main", t.bg);
     root.style.setProperty("--bg-surface", t.surf);
     root.style.setProperty("--bg-card", t.card);
-    root.style.setProperty("--bg-hover", "#1d1f33");
+    root.style.setProperty("--bg-hover", "#1d2138");
     root.style.setProperty("--text-main", "#f8fafc");
-    root.style.setProperty("--text-muted", "#64748b");
+    root.style.setProperty("--text-muted", "#94a3b8");
     root.style.setProperty("--border", "#1e293b");
   }
 
@@ -228,17 +168,22 @@ function applyAppearance() {
   if (settings.bg === "stars") body.classList.add("bg-stars");
 
   const fontName = settings.font || "Inter";
-  root.style.setProperty("--font-family", `'${fontName}', system-ui, sans-serif`);
+  root.style.setProperty("--font-family", "'" + fontName + "', system-ui, sans-serif");
   if (fontName !== "Inter") {
     let gf = document.getElementById("sf-google-font");
-    if (!gf) { gf = document.createElement("link"); gf.id = "sf-google-font"; gf.rel = "stylesheet"; document.head.appendChild(gf); }
-    gf.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName)}:wght@400;600;700;800;900&display=swap`;
+    if (!gf) {
+      gf = document.createElement("link");
+      gf.id = "sf-google-font";
+      gf.rel = "stylesheet";
+      document.head.appendChild(gf);
+    }
+    gf.href = "https://fonts.googleapis.com/css2?family=" + encodeURIComponent(fontName) + ":wght@400;600;700;800;900&display=swap";
   }
 }
 
 /* Tab & Favicon Cloaking */
 const CLOAKS = {
-  none:      { label: "Off",       title: null, icon: MOTO_MASCOT },
+  none:      { label: "Off",       title: null, icon: STARFORGE_ICON },
   google:    { label: "Google",    title: "Google", icon: "https://www.google.com/favicon.ico" },
   classroom: { label: "Classroom", title: "Home - Classroom", icon: "https://ssl.gstatic.com/classroom/favicon.png" },
   gmail:     { label: "Gmail",     title: "Inbox - Gmail", icon: "https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico" },
@@ -251,64 +196,135 @@ const CLOAKS = {
 let originalPageTitle = "Starforge";
 
 function setFavicon(href) {
-  document.querySelectorAll("link[rel*='icon']").forEach(el => el.remove());
+  document.querySelectorAll("link[rel*='icon']").forEach(function(el) { el.remove(); });
   const link = document.createElement("link");
   link.rel = "icon";
-  link.type = "image/png";
   link.href = href;
   document.head.appendChild(link);
 }
 
-function applyCloak(forceHide = false) {
-  const { settings } = getStore();
+function applyCloak(forceHide) {
+  const settings = getStore().settings;
   if (settings.cloakOnSwitch && !forceHide && !document.hidden) {
     document.title = originalPageTitle;
-    setFavicon(MOTO_MASCOT);
+    setFavicon(STARFORGE_ICON);
     return;
   }
-
   if (settings.customTitle || settings.customIcon) {
     if (settings.customTitle) document.title = settings.customTitle;
     if (settings.customIcon) setFavicon(settings.customIcon);
     return;
   }
-
   const preset = CLOAKS[settings.cloak] || CLOAKS.none;
-  if (preset.title) document.title = preset.title;
-  else document.title = originalPageTitle;
+  document.title = preset.title || originalPageTitle;
   setFavicon(preset.icon);
 }
 
-document.addEventListener("visibilitychange", () => {
-  const { settings } = getStore();
-  if (settings.cloakOnSwitch) applyCloak(document.hidden);
+document.addEventListener("visibilitychange", function() {
+  if (getStore().settings.cloakOnSwitch) applyCloak(document.hidden);
 });
 
 function openAboutBlankCloak() {
-  const { settings } = getStore();
+  const settings = getStore().settings;
   const preset = CLOAKS[settings.cloak] || CLOAKS.drive;
   const title = settings.customTitle || preset.title || "My Drive - Google Drive";
   const icon = settings.customIcon || preset.icon;
-
-  const docMarkup = `<!DOCTYPE html><html><head><title>${title}</title><link rel="icon" href="${icon}"><style>html,body,iframe{margin:0;padding:0;width:100%;height:100%;border:none;overflow:hidden;background:#06070c;}</style></head><body><iframe src="${window.location.href}" allowfullscreen></iframe></body></html>`;
-  
+  const docMarkup = "<!DOCTYPE html><html><head><title>" + title + "</title><link rel='icon' href='" + icon + "'><style>html,body,iframe{margin:0;padding:0;width:100%;height:100%;border:none;overflow:hidden;background:#06070c;}</style></head><body><iframe src='" + window.location.href + "' allowfullscreen></iframe></body></html>";
   document.open();
   document.write(docMarkup);
   document.close();
-  try { window.history.replaceState({}, "", "/"); } catch {}
+  try { window.history.replaceState({}, "", "/"); } catch (e) {}
 }
 
-window.addEventListener("keydown", e => {
+window.addEventListener("keydown", function(e) {
   if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName) || window.__bindingPanic) return;
-  const { settings } = getStore();
+  const settings = getStore().settings;
   if (settings.panicKey && e.key.toLowerCase() === settings.panicKey.toLowerCase()) {
     window.location.replace(settings.panicUrl || "https://classroom.google.com");
   }
 });
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", function() {
   originalPageTitle = document.title;
   applyAppearance();
   applyCloak();
-  refreshNavProfile();
+  refreshAuthUI();
 });
+
+/* Safe Async Firebase Loader */
+(function initFirebase() {
+  try {
+    Promise.all([
+      import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"),
+      import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js")
+    ]).then(function(mods) {
+      const appMod = mods[0];
+      const authMod = mods[1];
+      const fsMod = mods[2];
+
+      const app = appMod.initializeApp(firebaseConfig);
+      auth = authMod.getAuth(app);
+      db = fsMod.getFirestore(app);
+      fsDoc = fsMod.doc;
+      fsSetDoc = fsMod.setDoc;
+      fsGetDoc = fsMod.getDoc;
+
+      window.signInWithGoogle = function() {
+        const provider = new authMod.GoogleAuthProvider();
+        authMod.signInWithPopup(auth, provider).then(function(res) {
+          currentUser = res.user;
+          loadCloudProfile(res.user);
+        }).catch(function(err) {
+          if (err && err.code === "auth/popup-blocked") {
+            authMod.signInWithRedirect(auth, provider);
+          } else {
+            alert("Google Sign-In error: " + (err.message || err));
+          }
+        });
+      };
+
+      window.logoutFirebase = function() {
+        authMod.signOut(auth).then(function() {
+          currentUser = null;
+          refreshAuthUI();
+        });
+      };
+
+      authMod.onAuthStateChanged(auth, function(user) {
+        currentUser = user || null;
+        if (user) loadCloudProfile(user);
+        else refreshAuthUI();
+      });
+    }).catch(function(err) {
+      console.warn("Firebase SDK unavailable:", err);
+    });
+  } catch (e) {
+    console.warn("Firebase init skipped:", e);
+  }
+})();
+
+function loadCloudProfile(user) {
+  if (!db || !fsDoc || !fsGetDoc) {
+    refreshAuthUI();
+    return;
+  }
+  const ref = fsDoc(db, "users", user.uid);
+  fsGetDoc(ref).then(function(snap) {
+    if (snap.exists()) {
+      localStorage.setItem("starforge_data", JSON.stringify(snap.data()));
+    } else {
+      const local = getStore();
+      if (local.profile.name === "Starforger" && user.displayName) {
+        local.profile.name = user.displayName;
+        localStorage.setItem("starforge_data", JSON.stringify(local));
+      }
+      fsSetDoc(ref, getStore(), { merge: true });
+    }
+    applyAppearance();
+    applyCloak();
+    refreshAuthUI();
+  }).catch(function() {
+    refreshAuthUI();
+  });
+}

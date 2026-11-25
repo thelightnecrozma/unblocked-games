@@ -4,13 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Starforge — Unblocked Cosmic Arcade</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=4" />
 </head>
 <body>
   <header class="topbar">
     <a href="index.html" class="brand"><div class="brand-icon">✦</div><span>Starforge</span></a>
-    <div class="search-wrap"><span>🔍</span><input type="text" id="searchInput" placeholder="Search 18+ games..." autocomplete="off" /></div>
+    <div class="search-wrap"><span>🔍</span><input type="text" id="searchInput" placeholder="Search games..." autocomplete="off" /></div>
     <div class="nav-actions">
+      <button id="navLoginBtn" class="tool-btn primary" style="border-radius:999px;padding:0.4rem 0.85rem;font-size:0.82rem;">Login with Google</button>
       <a href="profile.html" class="profile-chip"><span class="avatar-dot" id="navAvatar">🌌</span><span id="navName">Starforger</span></a>
       <a href="settings.html" class="icon-btn" title="Settings & Tab Cloak">⚙️</a>
     </div>
@@ -26,63 +27,41 @@
       <button class="cat-btn" data-cat="Driving">🏎️ Driving</button>
       <button class="cat-btn" data-cat="Sports">⚽ Sports</button>
       <button class="cat-btn" data-cat="Puzzle">🧩 Puzzle</button>
-      <div class="sidebar-divider"></div>
-      <a href="profile.html" class="cat-btn">👤 Profile</a>
-      <a href="settings.html" class="cat-btn">⚙️ Settings</a>
+      <div class="sidebar-bottom">
+        <a href="profile.html" class="cat-btn">👤 Profile</a>
+        <a href="settings.html" class="cat-btn">⚙️ Settings</a>
+      </div>
     </aside>
 
     <main class="content">
-      <section class="hero" id="heroBanner">
-        <div class="hero-inner">
-          <span class="hero-tag" id="heroBadge">FEATURED</span>
-          <h1 id="heroTitle">Starfall Tetris</h1>
-          <p id="heroDesc"></p>
-          <a href="#" id="heroPlayBtn" class="btn-play-hero">▶ Play Now</a>
-        </div>
-        <div class="hero-dots" id="heroDots"></div>
-      </section>
-
       <div id="homeRows"></div>
       <div id="filteredView" style="display:none;">
-        <div class="section-header"><h2 id="filteredTitle">Games</h2><span class="count-pill" id="filteredCount">0</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <h2 id="filteredTitle" style="font-size:1.25rem;font-weight:800;">Games</h2>
+          <span class="count-pill" id="filteredCount">0</span>
+        </div>
         <div class="game-grid" id="filteredGrid"></div>
       </div>
     </main>
   </div>
 
-  <script src="core.js"></script>
-  <script src="games.js"></script>
+  <script src="core.js?v=4"></script>
+  <script src="games.js?v=4"></script>
   <script>
-    let activeCategory = "All", heroIdx = 0;
-    const featuredGames = GAMES.filter(g => g.featured);
-
-    function renderHero(idx) {
-      heroIdx = idx % featuredGames.length;
-      const g = featuredGames[heroIdx];
-      document.getElementById("heroBanner").style.backgroundImage = `url("${g.cover}")`;
-      document.getElementById("heroBadge").textContent = `${g.badge || "FEATURED"} • ${g.category.toUpperCase()}`;
-      document.getElementById("heroTitle").textContent = g.title;
-      document.getElementById("heroDesc").textContent = g.desc;
-      document.getElementById("heroPlayBtn").href = `play.html?game=${encodeURIComponent(g.id)}`;
-      document.getElementById("heroDots").innerHTML = featuredGames.map((_, i) =>
-        `<button class="hero-dot ${i === heroIdx ? "active" : ""}" onclick="renderHero(${i})"></button>`
-      ).join("");
-    }
-    setInterval(() => renderHero(heroIdx + 1), 6500);
-    renderHero(0);
+    let activeCategory = "All";
 
     function cardHTML(game) {
       const isFav = getStore().favorites.includes(game.id);
       return `
         <div class="game-card">
-          <button class="fav-star ${isFav ? "active" : ""}" onclick="event.preventDefault(); toggleFavorite('${game.id}'); renderPage();">${isFav ? "♥" : "♡"}</button>
+          <button style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(12,13,20,0.82);border:1px solid rgba(255,255,255,0.16);color:${isFav ? "#f43f5e" : "#fff"};cursor:pointer;z-index:3;" onclick="event.preventDefault(); toggleFavorite('${game.id}'); renderPage();">${isFav ? "♥" : "♡"}</button>
           <a href="play.html?game=${encodeURIComponent(game.id)}" style="text-decoration:none;color:inherit;">
             <div class="card-thumb">
-              ${game.badge ? `<span class="card-badge">${game.badge}</span>` : ""}
+              ${game.badge ? `<span style="position:absolute;top:8px;left:8px;background:rgba(12,13,20,0.85);color:#fbbf24;font-size:0.68rem;font-weight:800;padding:0.2rem 0.5rem;border-radius:6px;z-index:2;">${game.badge}</span>` : ""}
               <img src="${game.cover}" alt="${game.title}" loading="lazy" />
             </div>
             <div class="card-body">
-              <div><div class="card-title">${game.title}</div><div class="card-cat">${game.category}</div></div>
+              <div style="min-width:0;"><div class="card-title">${game.title}</div><div class="card-cat">${game.category}</div></div>
               <div class="play-pill">▶</div>
             </div>
           </a>
@@ -90,25 +69,32 @@
     }
 
     function makeRow(title, list) {
-      return list.length ? `<section class="row-section"><div class="section-header"><h2>${title}</h2><span class="count-pill">${list.length}</span></div><div class="carousel">${list.map(cardHTML).join("")}</div></section>` : "";
+      return list.length ? `<section style="margin-bottom:1.85rem;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.85rem;"><h2 style="font-size:1.15rem;font-weight:800;">${title}</h2><span class="count-pill">${list.length}</span></div><div class="carousel">${list.map(cardHTML).join("")}</div></section>` : "";
     }
 
     function renderPage() {
       const q = document.getElementById("searchInput").value.trim().toLowerCase();
-      const homeRows = document.getElementById("homeRows"), filteredView = document.getElementById("filteredView"), hero = document.getElementById("heroBanner"), store = getStore();
+      const homeRows = document.getElementById("homeRows");
+      const filteredView = document.getElementById("filteredView");
+      const store = getStore();
 
       if (activeCategory === "All" && !q) {
-        hero.style.display = "flex"; homeRows.style.display = "block"; filteredView.style.display = "none";
+        homeRows.style.display = "block";
+        filteredView.style.display = "none";
+        const trending = GAMES.filter(g => g.trending);
+        const nonTrending = GAMES.filter(g => !g.trending);
+
         homeRows.innerHTML =
           makeRow("🕒 Continue Playing", store.recent.map(id => GAMES.find(g => g.id === id)).filter(Boolean)) +
-          makeRow("❤️ Your Favorites", store.favorites.map(id => GAMES.find(g => g.id === id)).filter(Boolean)) +
-          makeRow("🔥 Trending on Starforge", GAMES.filter(g => g.trending)) +
-          makeRow("🕹️ Arcade & Action", GAMES.filter(g => g.category === "Arcade" || g.category === "Action")) +
-          makeRow("🏎️ Driving & Sports", GAMES.filter(g => g.category === "Driving" || g.category === "Sports")) +
-          makeRow("🧩 Puzzle & Brain", GAMES.filter(g => g.category === "Puzzle"));
+          makeRow("🔥 Trending on Starforge", trending) +
+          makeRow("⚔️ Action & Driving", nonTrending.filter(g => g.category === "Action" || g.category === "Driving")) +
+          makeRow("🕹️ Arcade, Sports & Puzzle", nonTrending.filter(g => ["Arcade", "Sports", "Puzzle"].includes(g.category)));
       } else {
-        hero.style.display = "none"; homeRows.style.display = "none"; filteredView.style.display = "block";
-        let list = activeCategory === "Favorites" ? store.favorites.map(id => GAMES.find(g => g.id === id)).filter(Boolean) : (activeCategory !== "All" ? GAMES.filter(g => g.category === activeCategory) : GAMES);
+        homeRows.style.display = "none";
+        filteredView.style.display = "block";
+        let list = activeCategory === "Favorites"
+          ? store.favorites.map(id => GAMES.find(g => g.id === id)).filter(Boolean)
+          : (activeCategory !== "All" ? GAMES.filter(g => g.category === activeCategory) : GAMES);
         if (q) list = list.filter(g => g.title.toLowerCase().includes(q) || g.category.toLowerCase().includes(q));
         document.getElementById("filteredTitle").textContent = q ? `Search: "${document.getElementById("searchInput").value}"` : `${activeCategory} Games`;
         document.getElementById("filteredCount").textContent = `${list.length} games`;
@@ -118,7 +104,9 @@
 
     document.querySelectorAll(".cat-btn[data-cat]").forEach(btn => btn.addEventListener("click", () => {
       document.querySelectorAll(".cat-btn[data-cat]").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active"); activeCategory = btn.dataset.cat; renderPage();
+      btn.classList.add("active");
+      activeCategory = btn.dataset.cat;
+      renderPage();
     }));
     document.getElementById("searchInput").addEventListener("input", renderPage);
     renderPage();

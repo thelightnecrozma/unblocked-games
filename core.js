@@ -1,6 +1,5 @@
 /* STARFORGE CORE & FIREBASE SCRIPT */
 
-// The visual starburst mascot (renders crystal/spark icon without image uploads)
 const MOTO_MASCOT = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='a' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%23a855f7'/><stop offset='100%25' stop-color='%23c084fc'/></linearGradient></defs><rect width='100' height='100' rx='24' fill='%230a0c16'/><path d='M50 12 L56 38 L82 44 L58 52 L50 82 L42 52 L18 44 L44 38 Z' fill='url(%23a)'/><circle cx='50' cy='45' r='12' fill='%23fff' opacity='0.75'/><path d='M50 32 L51 44 L63 45 L51 46 L50 58 L49 46 L37 45 L49 44 Z' fill='%23fff'/></svg>";
 
 const DEFAULT_DATA = {
@@ -28,19 +27,46 @@ const DEFAULT_DATA = {
   }
 };
 
-// PLACE YOUR FIREBASE CREDENTIALS FROM THE CONSOLE HERE:
 const firebaseConfig = {
-  apiKey: "PLACE_YOUR_API_KEY_HERE",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDEQlK8xx50LGrFuvGwvOmiWnGJUHN9WDQ",
+  authDomain: "starforge-arcade.firebaseapp.com",
+  projectId: "starforge-arcade",
+  storageBucket: "starforge-arcade.firebasestorage.app",
+  messagingSenderId: "538838328388",
+  appId: "1:538838328388:web:7c25752945c7b4c3b24811",
+  measurementId: "G-12P3GT37B8"
 };
 
-let db, auth, currentUser = null;
+let db, auth, fsDoc, fsSetDoc, fsGetDoc, currentUser = null;
 
-// Only spin up Firebase when API credentials are live, preventing crash states on build scripts
+function refreshNavProfile() {
+  const data = getStore();
+  const navAvatar = document.getElementById("navAvatar");
+  const navName = document.getElementById("navName");
+  if (navAvatar) navAvatar.textContent = data.profile.avatar;
+  if (navName) navName.textContent = data.profile.name;
+
+  const navActions = document.querySelector(".nav-actions");
+  if (navActions) {
+    let navLogin = document.getElementById("navLoginBtn");
+    if (!navLogin) {
+      navLogin = document.createElement("button");
+      navLogin.id = "navLoginBtn";
+      navLogin.style.cssText = "padding:0.38rem 0.78rem;font-size:0.82rem;border-radius:999px;";
+      navActions.prepend(navLogin);
+    }
+    if (currentUser) {
+      navLogin.textContent = "Sign out";
+      navLogin.className = "tool-btn";
+      navLogin.onclick = () => window.logoutFirebase && window.logoutFirebase();
+    } else {
+      navLogin.textContent = "Login with Google";
+      navLogin.className = "tool-btn primary";
+      navLogin.onclick = () => window.signInWithGoogle ? window.signInWithGoogle() : alert("Loading Google Sign-In, tap again in a second.");
+    }
+  }
+}
+
 if (firebaseConfig.apiKey && !firebaseConfig.apiKey.includes("PLACE_YOUR")) {
   import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js").then(({ initializeApp }) => {
     const app = initializeApp(firebaseConfig);
@@ -50,12 +76,15 @@ if (firebaseConfig.apiKey && !firebaseConfig.apiKey.includes("PLACE_YOUR")) {
     ]).then(([{ getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }, { getFirestore, doc, setDoc, getDoc }]) => {
       auth = getAuth(app);
       db = getFirestore(app);
+      fsDoc = doc;
+      fsSetDoc = setDoc;
+      fsGetDoc = getDoc;
 
       window.signInWithGoogle = () => {
         signInWithPopup(auth, new GoogleAuthProvider()).then(res => {
           currentUser = res.user;
-          loadUserData(res.user.uid);
-        }).catch(err => console.error("Login fail:", err));
+          loadUserData(res.user);
+        }).catch(err => alert("Google Sign-In error: " + err.message));
       };
 
       window.logoutFirebase = () => {
@@ -68,37 +97,41 @@ if (firebaseConfig.apiKey && !firebaseConfig.apiKey.includes("PLACE_YOUR")) {
       onAuthStateChanged(auth, user => {
         if (user) {
           currentUser = user;
-          loadUserData(user.uid);
+          loadUserData(user);
         } else {
           applyAppearance();
           applyCloak();
+          refreshNavProfile();
         }
       });
     });
   });
 }
 
-function loadUserData(uid) {
-  if (!db) return;
-  const docRef = doc(db, "users", uid);
-  getDoc(docRef).then(snap => {
+function loadUserData(user) {
+  if (!db || !fsDoc || !fsGetDoc) return;
+  const docRef = fsDoc(db, "users", user.uid);
+  fsGetDoc(docRef).then(snap => {
     if (snap.exists()) {
       localStorage.setItem("starforge_data", JSON.stringify(snap.data()));
     } else {
-      syncLocalToFirebase(uid);
+      const local = getStore();
+      if (local.profile.name === "Starforger" && user.displayName) {
+        local.profile.name = user.displayName;
+        localStorage.setItem("starforge_data", JSON.stringify(local));
+      }
+      syncLocalToFirebase(user.uid);
     }
     applyAppearance();
     applyCloak();
+    refreshNavProfile();
     if (window.renderProfile) window.renderProfile();
-  });
+  }).catch(err => console.error("Cloud load error:", err));
 }
 
 function syncLocalToFirebase(uid) {
-  if (!db) return;
-  const data = getStore();
-  setDoc(doc(db, "users", uid), data).then(() => {
-    console.log("Profile synced to cloud backup.");
-  });
+  if (!db || !fsDoc || !fsSetDoc) return;
+  fsSetDoc(fsDoc(db, "users", uid), getStore(), { merge: true }).catch(err => console.error("Cloud save error:", err));
 }
 
 function getStore() {
@@ -116,8 +149,8 @@ function getStore() {
 
 function saveStore(data) {
   localStorage.setItem("starforge_data", JSON.stringify(data));
-  if (currentUser && db) {
-    setDoc(doc(db, "users", currentUser.uid), data);
+  if (currentUser && db && fsDoc && fsSetDoc) {
+    fsSetDoc(fsDoc(db, "users", currentUser.uid), data, { merge: true });
   }
 }
 
@@ -144,16 +177,16 @@ function recordGameSession(id) {
 
 /* Themes & Appearance */
 const THEMES = {
-  default:    { label: "Default",    accent: "#a855f7", light: "#c084fc", bg: "#06070c", surf: "#0a0c16", card: "#0f1221" },
-  strawberri: { label: "Strawberri", accent: "#e11d48", light: "#fb7185", bg: "#14090c", surf: "#1f0e13", card: "#2b141b" },
-  pink:       { label: "Pink",       accent: "#db2777", light: "#f472b6", bg: "#120a10", surf: "#1c1019", card: "#271623" },
-  aqua:       { label: "Aqua",       accent: "#0284c7", light: "#38bdf8", bg: "#081018", surf: "#0f1924", card: "#162333" },
-  forest:     { label: "Forest",     accent: "#059669", light: "#34d399", bg: "#08120e", surf: "#0f1f18", card: "#162b22" },
-  rose:       { label: "Rose",       accent: "#e11d48", light: "#fda4af", bg: "#130b0e", surf: "#1d1116", card: "#291820" },
-  lavender:   { label: "Lavender",   accent: "#8b5cf6", light: "#c4b5fd", bg: "#0f0d17", surf: "#171424", card: "#211d33" },
-  amber:      { label: "Amber",      accent: "#d97706", light: "#fbbf24", bg: "#140f08", surf: "#1f170c", card: "#2b2011" },
+  default:    { label: "Default",       accent: "#a855f7", light: "#c084fc", bg: "#06070c", surf: "#0a0c16", card: "#0f1221" },
+  strawberri: { label: "Strawberri",    accent: "#e11d48", light: "#fb7185", bg: "#14090c", surf: "#1f0e13", card: "#2b141b" },
+  pink:       { label: "Pink",          accent: "#db2777", light: "#f472b6", bg: "#120a10", surf: "#1c1019", card: "#271623" },
+  aqua:       { label: "Aqua",          accent: "#0284c7", light: "#38bdf8", bg: "#081018", surf: "#0f1924", card: "#162333" },
+  forest:     { label: "Forest",        accent: "#059669", light: "#34d399", bg: "#08120e", surf: "#0f1f18", card: "#162b22" },
+  rose:       { label: "Rose",          accent: "#e11d48", light: "#fda4af", bg: "#130b0e", surf: "#1d1116", card: "#291820" },
+  lavender:   { label: "Lavender",      accent: "#8b5cf6", light: "#c4b5fd", bg: "#0f0d17", surf: "#171424", card: "#211d33" },
+  amber:      { label: "Amber",         accent: "#d97706", light: "#fbbf24", bg: "#140f08", surf: "#1f170c", card: "#2b2011" },
   gold:       { label: "Necrozma Gold", accent: "#eab308", light: "#fde047", bg: "#0c0d14", surf: "#141622", card: "#1d2033" },
-  mono:       { label: "Monochrome", accent: "#52525b", light: "#d4d4d8", bg: "#09090b", surf: "#121215", card: "#1c1c21" }
+  mono:       { label: "Monochrome",    accent: "#52525b", light: "#d4d4d8", bg: "#09090b", surf: "#121215", card: "#1c1c21" }
 };
 
 function applyAppearance() {
@@ -195,4 +228,87 @@ function applyAppearance() {
   if (settings.bg === "stars") body.classList.add("bg-stars");
 
   const fontName = settings.font || "Inter";
-  root.style.setProperty("--font
+  root.style.setProperty("--font-family", `'${fontName}', system-ui, sans-serif`);
+  if (fontName !== "Inter") {
+    let gf = document.getElementById("sf-google-font");
+    if (!gf) { gf = document.createElement("link"); gf.id = "sf-google-font"; gf.rel = "stylesheet"; document.head.appendChild(gf); }
+    gf.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName)}:wght@400;600;700;800;900&display=swap`;
+  }
+}
+
+/* Tab & Favicon Cloaking */
+const CLOAKS = {
+  none:      { label: "Off",       title: null, icon: MOTO_MASCOT },
+  google:    { label: "Google",    title: "Google", icon: "https://www.google.com/favicon.ico" },
+  classroom: { label: "Classroom", title: "Home - Classroom", icon: "https://ssl.gstatic.com/classroom/favicon.png" },
+  gmail:     { label: "Gmail",     title: "Inbox - Gmail", icon: "https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico" },
+  drive:     { label: "Drive",     title: "My Drive - Google Drive", icon: "https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png" },
+  desmos:    { label: "Desmos",    title: "Desmos | Graphing Calculator", icon: "https://www.desmos.com/assets/img/apps/graphing/favicon.ico" },
+  wikipedia: { label: "Wikipedia", title: "Wikipedia, the free encyclopedia", icon: "https://en.wikipedia.org/static/favicon/wikipedia.ico" },
+  newtab:    { label: "New Tab",   title: "New Tab", icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%2364748b'/></svg>" }
+};
+
+let originalPageTitle = "Starforge";
+
+function setFavicon(href) {
+  document.querySelectorAll("link[rel*='icon']").forEach(el => el.remove());
+  const link = document.createElement("link");
+  link.rel = "icon";
+  link.type = "image/png";
+  link.href = href;
+  document.head.appendChild(link);
+}
+
+function applyCloak(forceHide = false) {
+  const { settings } = getStore();
+  if (settings.cloakOnSwitch && !forceHide && !document.hidden) {
+    document.title = originalPageTitle;
+    setFavicon(MOTO_MASCOT);
+    return;
+  }
+
+  if (settings.customTitle || settings.customIcon) {
+    if (settings.customTitle) document.title = settings.customTitle;
+    if (settings.customIcon) setFavicon(settings.customIcon);
+    return;
+  }
+
+  const preset = CLOAKS[settings.cloak] || CLOAKS.none;
+  if (preset.title) document.title = preset.title;
+  else document.title = originalPageTitle;
+  setFavicon(preset.icon);
+}
+
+document.addEventListener("visibilitychange", () => {
+  const { settings } = getStore();
+  if (settings.cloakOnSwitch) applyCloak(document.hidden);
+});
+
+function openAboutBlankCloak() {
+  const { settings } = getStore();
+  const preset = CLOAKS[settings.cloak] || CLOAKS.drive;
+  const title = settings.customTitle || preset.title || "My Drive - Google Drive";
+  const icon = settings.customIcon || preset.icon;
+
+  const docMarkup = `<!DOCTYPE html><html><head><title>${title}</title><link rel="icon" href="${icon}"><style>html,body,iframe{margin:0;padding:0;width:100%;height:100%;border:none;overflow:hidden;background:#06070c;}</style></head><body><iframe src="${window.location.href}" allowfullscreen></iframe></body></html>`;
+  
+  document.open();
+  document.write(docMarkup);
+  document.close();
+  try { window.history.replaceState({}, "", "/"); } catch {}
+}
+
+window.addEventListener("keydown", e => {
+  if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName) || window.__bindingPanic) return;
+  const { settings } = getStore();
+  if (settings.panicKey && e.key.toLowerCase() === settings.panicKey.toLowerCase()) {
+    window.location.replace(settings.panicUrl || "https://classroom.google.com");
+  }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  originalPageTitle = document.title;
+  applyAppearance();
+  applyCloak();
+  refreshNavProfile();
+});
